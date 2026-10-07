@@ -1,0 +1,8 @@
+**/node_modules
+**/.next
+**/.data
+**/*.tsbuildinfo
+.git
+brand/out
+contracts/lib
+contracts/out

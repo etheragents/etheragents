@@ -73,8 +73,8 @@ Repository → **Settings → Secrets and variables → Actions**.
 
 ## 5. Railway
 
-Railway builds each service from a Dockerfile in `infra/docker/`, chosen with the `RAILWAY_DOCKERFILE_PATH`
-variable. (`infra/railway/*.json` hold the same settings for projects that still use Railway's config-as-code.)
+Railway builds both services from the root `Dockerfile`; the `SERVICE` variable (`api` or `web`) picks which one.
+(`infra/docker/` and `infra/railway/` hold equivalent per-service files for other hosts.)
 To preview the site before the contracts exist, set `SIM=1` on `api` and `NEXT_PUBLIC_CHAIN_ID=31337` on `web`.
 
 1. **New Project → Deploy from GitHub repo** → pick `etheragents`.
@@ -88,7 +88,7 @@ To preview the site before the contracts exist, set `SIM=1` on `api` and `NEXT_P
 
 | Variable | Value |
 |---|---|
-| `RAILWAY_DOCKERFILE_PATH` | `/infra/docker/api.Dockerfile` |
+| `SERVICE` | `api` |
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (Railway suggests it) |
 | `CHAIN_ID` | `11155111` (Sepolia) — later `1` |
 | `RPC_URL` | Alchemy URL for that network |
@@ -106,7 +106,7 @@ To preview the site before the contracts exist, set `SIM=1` on `api` and `NEXT_P
 
 | Variable | Value |
 |---|---|
-| `RAILWAY_DOCKERFILE_PATH` | `/infra/docker/web.Dockerfile` |
+| `SERVICE` | `web` |
 | `NEXT_PUBLIC_API_URL` | `https://api.etheragents.fun` |
 | `NEXT_PUBLIC_SITE_URL` | `https://www.etheragents.fun` |
 | `NEXT_PUBLIC_CHAIN_ID` | `11155111` — later `1` |
