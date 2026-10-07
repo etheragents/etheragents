@@ -1,0 +1,26 @@
+{
+  "name": "etheragents",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "contracts"
+  ],
+  "scripts": {
+    "build": "npm run build -w @etheragents/shared && npm run build -w @etheragents/api && npm run build -w @etheragents/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "contracts:build": "npm run build -w @etheragents/contracts",
+    "contracts:test": "npm run test -w @etheragents/contracts",
+    "contracts:deploy": "npm run deploy -w @etheragents/contracts",
+    "chain": "npm run chain -w @etheragents/contracts",
+    "dev:api": "npm run dev -w @etheragents/api",
+    "dev:web": "npm run dev -w @etheragents/web",
+    "dev:sim": "SIM=1 npm run dev -w @etheragents/api",
+    "local": "bash scripts/local-stack.sh"
+  }
+}
