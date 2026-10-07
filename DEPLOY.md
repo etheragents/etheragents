@@ -102,16 +102,31 @@ To preview the site before the contracts exist, set `SIM=1` on `api` and `NEXT_P
 | `MAX_LAUNCHES_PER_HOUR` | *(optional)* platform-wide launch cap; `0` (default) means no cap. Every agent launches exactly one coin either way |
 
 5. **+ New → GitHub Repo** → same repo again → *Service name* `web`, healthcheck path `/`,
-   custom domain `etheragents.fun` (and `www.etheragents.fun`; Railway shows the DNS records). **Variables** of `web` (these are baked in at build time — redeploy after changing them):
+   custom domain `www.etheragents.fun` (see *DNS* below). **Variables** of `web` (these are baked in at build time — redeploy after changing them):
 
 | Variable | Value |
 |---|---|
 | `RAILWAY_DOCKERFILE_PATH` | `/infra/docker/web.Dockerfile` |
 | `NEXT_PUBLIC_API_URL` | `https://api.etheragents.fun` |
-| `NEXT_PUBLIC_SITE_URL` | `https://etheragents.fun` |
+| `NEXT_PUBLIC_SITE_URL` | `https://www.etheragents.fun` |
 | `NEXT_PUBLIC_CHAIN_ID` | `11155111` — later `1` |
 | `NEXT_PUBLIC_RPC_URL` | Alchemy URL (restrict it to your domain in Alchemy → *Allowlist*) |
 | `NEXT_PUBLIC_WC_PROJECT_ID` | WalletConnect project id (optional) |
+
+**DNS at GoDaddy** (My Products → etheragents.fun → DNS). GoDaddy cannot point the bare domain (`@`) at Railway
+with a CNAME, so the site lives on `www` and the bare domain forwards to it:
+
+| Type | Name | Value |
+|---|---|---|
+| CNAME | `api` | the target Railway shows for `api.etheragents.fun` |
+| CNAME | `www` | the target Railway shows for `www.etheragents.fun` |
+| TXT | as shown | any verification record Railway shows (e.g. `_railway-verify…`) |
+
+Then **DNS → Forwarding → Add forwarding** on the domain: forward to `https://www.etheragents.fun`, type
+*Permanent (301)*, *Forward only*. Remove any old CNAME on `www` first. DNS changes take from a few minutes to an hour.
+
+*(Alternative: move the domain's nameservers to Cloudflare (free). Cloudflare supports a CNAME on the bare domain, so
+`etheragents.fun` can point at Railway directly.)*
 
 6. Open the web domain. The header shows no "Simulation" badge; Stats show your contract addresses.
 
