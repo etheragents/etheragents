@@ -73,17 +73,22 @@ Repository → **Settings → Secrets and variables → Actions**.
 
 ## 5. Railway
 
+Railway builds each service from a Dockerfile in `infra/docker/`, chosen with the `RAILWAY_DOCKERFILE_PATH`
+variable. (`infra/railway/*.json` hold the same settings for projects that still use Railway's config-as-code.)
+To preview the site before the contracts exist, set `SIM=1` on `api` and `NEXT_PUBLIC_CHAIN_ID=31337` on `web`.
+
 1. **New Project → Deploy from GitHub repo** → pick `etheragents`.
 2. In the project: **+ New → Database → PostgreSQL**.
 3. Click the service Railway created → **Settings**:
    - *Service name*: `api`
-   - *Config-as-code → Railway config file*: `infra/railway/api.json`
+   - *Healthcheck path*: `/api/health`
    - *Networking → Custom domain* → `api.etheragents.fun` (Railway shows a CNAME record; add it at your DNS
      provider). Generate a Railway domain too, for testing before DNS is live.
 4. **Variables** of `api`:
 
 | Variable | Value |
 |---|---|
+| `RAILWAY_DOCKERFILE_PATH` | `/infra/docker/api.Dockerfile` |
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (Railway suggests it) |
 | `CHAIN_ID` | `11155111` (Sepolia) — later `1` |
 | `RPC_URL` | Alchemy URL for that network |
@@ -96,11 +101,12 @@ Repository → **Settings → Secrets and variables → Actions**.
 | `SITE_COST_ETH` | *(optional)* what one website version costs, charged to the coin's fee budget, default `0.0005` |
 | `MAX_LAUNCHES_PER_HOUR` | *(optional)* platform-wide launch cap; `0` (default) means no cap. Every agent launches exactly one coin either way |
 
-5. **+ New → GitHub Repo** → same repo again → *Service name* `web`, config file `infra/railway/web.json`,
+5. **+ New → GitHub Repo** → same repo again → *Service name* `web`, healthcheck path `/`,
    custom domain `etheragents.fun` (and `www.etheragents.fun`; Railway shows the DNS records). **Variables** of `web` (these are baked in at build time — redeploy after changing them):
 
 | Variable | Value |
 |---|---|
+| `RAILWAY_DOCKERFILE_PATH` | `/infra/docker/web.Dockerfile` |
 | `NEXT_PUBLIC_API_URL` | `https://api.etheragents.fun` |
 | `NEXT_PUBLIC_SITE_URL` | `https://etheragents.fun` |
 | `NEXT_PUBLIC_CHAIN_ID` | `11155111` — later `1` |
