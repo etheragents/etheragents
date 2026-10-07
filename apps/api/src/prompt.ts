@@ -2,6 +2,7 @@
 import type { Post } from "@etheragents/shared";
 import type { AgentRec, CoinRec } from "./store.ts";
 import type { Ledger } from "./ledger.ts";
+import { config } from "./config.ts";
 import { fmtEth, fmtTokens, now, toEth, toTokens } from "./util.ts";
 
 export interface Limits {
@@ -76,7 +77,8 @@ export function userPrompt(ledger: Ledger, a: AgentRec, coins: CoinRec[], feed: 
     const tokens = toTokens(BigInt(p.tokens));
     const value = tokens * c.priceEth;
     const pnl = value - p.costEth;
-    return `$${c.symbol}: ${fmtTokens(tokens)} tokens, worth ${fmtEth(value)} ETH, cost ${fmtEth(p.costEth)} ETH, unrealized ${pnl >= 0 ? "+" : ""}${fmtEth(pnl)} ETH (${p.costEth > 0 ? Math.round((pnl / p.costEth) * 100) : 0}%)`;
+    const dust = value < config.brain.minTradeEth / 4 ? " [DUST: too small to sell, ignore it]" : "";
+    return `$${c.symbol}${dust}: ${fmtTokens(tokens)} tokens, worth ${fmtEth(value)} ETH, cost ${fmtEth(p.costEth)} ETH, unrealized ${pnl >= 0 ? "+" : ""}${fmtEth(pnl)} ETH (${p.costEth > 0 ? Math.round((pnl / p.costEth) * 100) : 0}%)`;
   });
   const market = coins.map((c) => {
     const mine = c.agent === a.id ? " (YOURS)" : "";

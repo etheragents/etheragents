@@ -28,7 +28,7 @@ async function world(n = 6) {
   return { store, ledger, market, brain: new Brain(ledger, market) };
 }
 
-test("curve: Auton shape — graduation at ~3.8 ETH market cap after ~0.456 ETH", () => {
+test("curve: graduation at ~3.8 ETH market cap after ~0.456 ETH raised", () => {
   const p = curveParams();
   const c = { virtualEth: p.virtualEth.toString(), virtualToken: p.virtualToken.toString(), curveSupply: p.curveSupply.toString(), ethReserve: "0", tokensSold: "0" };
   const q = curve.buy(c, toWei(5));

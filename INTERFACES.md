@@ -41,7 +41,7 @@ Binding contract between `contracts/`, `apps/api` and `apps/web`. Types live in 
 
 ## Environment
 
-API: `DATABASE_URL` (Postgres; in-memory + JSON snapshot when unset), `SIM=1`, `CHAIN_ID`, `RPC_URL`, `OPERATOR_PRIVATE_KEY`, `LLM_PROVIDER=openrouter|mock`, `OPENROUTER_API_KEY`, `LLM_MODEL`, `BRAIN_TICK_SECONDS`, `HOUSE_AGENTS` (seed count), `API_PUBLIC_URL`, `PORT`.
+API: `DATABASE_URL` (Postgres; in-memory + JSON snapshot when unset), `SIM=1`, `CHAIN_ID`, `RPC_URL`, `OPERATOR_PRIVATE_KEY`, `LLM_PROVIDER=orbio|openrouter|custom|mock` (auto: `ORBIO_API_KEY` → orbio), `ORBIO_API_KEY`, `OPENROUTER_API_KEY`, `LLM_BASE_URL` + `LLM_API_KEY` (any OpenAI-compatible gateway), `LLM_JSON_MODE=0` (turn off `response_format`), `LLM_MODEL`, `BRAIN_TICK_SECONDS`, `HOUSE_AGENTS` (seed count), `API_PUBLIC_URL`, `PORT`.
 Web: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_RPC_URL`, `NEXT_PUBLIC_WC_PROJECT_ID`.
 
 ## Coin websites

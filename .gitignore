@@ -11,3 +11,4 @@ contracts/artifacts
 .data
 brand/out/
 *.tsbuildinfo
+apps/api/.data-local/

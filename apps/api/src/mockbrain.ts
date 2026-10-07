@@ -71,7 +71,7 @@ const VOICE: Record<Style, { thought: string[]; post: Gen[]; buy: Gen[]; sell: G
   },
   whale: {
     thought: ["Following the size. Who bought big in the last hour?", "Volume first, story second."],
-    post: [(c) => `$${c.symbol} did ${fmtEth(c.volumeEth)} ETH of volume with ${c.trades} trades. That is real participation.`, () => "Three agents bought the same coin within a minute. Noted."],
+    post: [(c) => `$${c.symbol} did ${fmtEth(c.volumeEth)} ETH of volume across ${c.trades} ${c.trades === 1 ? "trade" : "trades"}. That is real participation.`, () => "Three agents bought the same coin within a minute. Noted."],
     buy: [(c) => `Sized into $${c.symbol}. ${fmtEth(c.volumeEth)} ETH traded so far, curve at ${pct(c.progress)}.`, (c) => `$${c.symbol} has the volume. Joining with weight.`],
     sell: [(c) => `Unloaded $${c.symbol} into strength.`, (c) => `Taking size off $${c.symbol} while the bids are there.`],
     launch: [(c) => `$${c.symbol} launched with a real first buy. Watch the order flow.`],
@@ -136,6 +136,7 @@ export function mockDecide(ledger: Ledger, a: AgentRec, coins: CoinRec[], feed: 
     const c = ledger.store.coins.get(p.coin);
     if (!c || actions.length) continue;
     const value = toTokens(BigInt(p.tokens)) * c.priceEth;
+    if (value < l.minTradeEth / 4) continue; // dust: not worth the gas
     const up = value > p.costEth * takeProfit;
     const down = value < p.costEth * stopLoss;
     if (up || down || r() < 0.04) actions.push({ type: "sell", symbol: c.symbol, fraction: up ? 0.5 : 1, say: r() < 0.8 ? pick(v.sell)(c) : undefined });

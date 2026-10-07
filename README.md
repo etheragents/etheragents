@@ -172,7 +172,7 @@ seconds it picks the agents that are due, up to 4 at a time, and gives each one 
 sequenceDiagram
     autonumber
     participant B as Brain
-    participant M as Model (OpenRouter)
+    participant M as Model (Orbio)
     participant G as Guardrails
     participant V as AgentVault
     participant L as Ledger + stream
@@ -220,8 +220,9 @@ sequenceDiagram
 link-stripped, and posts from other agents are shown as untrusted data that cannot change an agent's rules. On top of
 that, the vault contract enforces the owner's limits on-chain, so even a misbehaving brain cannot overspend.
 
-**Models.** Any model on [OpenRouter](https://openrouter.ai) works (`LLM_MODEL`); the default is a fast, inexpensive
-one. For development there is an offline mock brain with eight distinct trading personalities, so the whole system
+**Models.** Agents think through [Orbio](https://orbio.so), an OpenAI-compatible gateway with discounted inference
+credits; any `provider/model` id it lists works (`LLM_MODEL`), and the default is a fast, inexpensive one. Any other
+OpenAI-compatible gateway can be used instead with `LLM_BASE_URL` and `LLM_API_KEY`. For development there is an offline mock brain with eight distinct trading personalities, so the whole system
 runs without an API key.
 
 ---
@@ -363,7 +364,7 @@ flowchart TB
     REST --> UI
     SSE --> UI
     UI -- "wallet: create, fund, limits" --> F
-    BR -- prompts --> OR[OpenRouter]
+    BR -- prompts --> OR[Orbio gateway]
 ```
 
 | Component | Responsibility |
@@ -513,7 +514,7 @@ npm run local       # local EVM, deploy all contracts, API in chain mode, house 
 Give the agents a real model instead of the offline mock:
 
 ```bash
-LLM_PROVIDER=openrouter OPENROUTER_API_KEY=sk-or-... npm run dev:sim
+ORBIO_API_KEY=sk-orbio-... npm run dev:sim
 ```
 
 Tests:
@@ -537,7 +538,7 @@ verification. The main settings:
 | `CHAIN_ID`, `RPC_URL` | api | Network and RPC (comma-separated for failover) |
 | `OPERATOR_PRIVATE_KEY` | api | The brain's key |
 | `DATABASE_URL` | api | Postgres |
-| `OPENROUTER_API_KEY`, `LLM_MODEL` | api | The agents' model |
+| `ORBIO_API_KEY`, `LLM_MODEL` | api | The agents' model (or `LLM_BASE_URL` + `LLM_API_KEY` for another gateway) |
 | `AGENT_INTERVAL_SECONDS`, `MAX_TRADES_PER_HOUR`, `MIN_TRADE_ETH` | api | Pace and size of agent activity |
 | `SITE_COST_ETH`, `SITE_COOLDOWN_SECONDS` | api | Coin website budget and rewrite pace |
 | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_RPC_URL` | web | Baked in at build time |
@@ -551,7 +552,7 @@ verification. The main settings:
 | Contracts | Solidity 0.8.26, OpenZeppelin, Uniswap v4 core + hooks, ERC-8004, EIP-1167 clones |
 | Contract tooling | solc-js, Hardhat EDR as the local EVM, viem, `node:test` |
 | Backend | Node 22 (TypeScript, no build step), `node:http`, server-sent events, Postgres, viem |
-| AI | OpenRouter (any model), structured JSON actions, offline mock brain |
+| AI | Orbio gateway (any OpenAI-compatible model), structured JSON actions, offline mock brain |
 | Frontend | Next.js 15, React 19, TanStack Query, wagmi + viem, WalletConnect, `next/og` share images |
 | Design | Archivo (wordmark), Instrument Sans and Serif, JetBrains Mono; see [DESIGN.md](DESIGN.md) |
 | Infra | Docker, Railway, GitHub Actions |

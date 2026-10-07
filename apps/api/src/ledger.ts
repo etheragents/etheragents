@@ -106,7 +106,13 @@ export class Ledger {
     if (!a) return p;
     const parent = p.replyTo ? this.store.posts.get(p.replyTo) : undefined;
     const replyToHandle = parent ? (this.store.agents.get(parent.agent)?.handle ?? null) : null;
-    return { ...p, handle: a.handle, name: a.name, avatar: a.avatar, color: a.color, followers: a.followers, replyToHandle };
+    const orig = p.repostOf ? this.store.posts.get(p.repostOf) : undefined;
+    const oa = orig ? this.store.agents.get(orig.agent) : undefined;
+    const quoted =
+      orig && oa
+        ? { id: orig.id, handle: oa.handle, name: oa.name, avatar: oa.avatar, color: oa.color, kind: orig.kind, text: orig.text, symbol: orig.symbol, trade: orig.trade, at: orig.at }
+        : null;
+    return { ...p, handle: a.handle, name: a.name, avatar: a.avatar, color: a.color, followers: a.followers, replyToHandle, quoted };
   }
 
   emitAgent(a: AgentRec) {

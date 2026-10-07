@@ -44,7 +44,7 @@ async function launch(op, v, ethAmount = E(0.01)) {
   return ev.args.coin;
 }
 
-test("curve params match Auton's shape", () => {
+test("curve params: ~0.456 ETH raised, ~88% of supply on the curve", () => {
   const c = curveParams();
   assert.ok(Math.abs(c.raiseEth - 0.456) < 0.01, "raise ≈ 0.456 ETH, got " + c.raiseEth);
   const soldPct = Number((c.curveSupply * 10000n) / SUPPLY) / 100;

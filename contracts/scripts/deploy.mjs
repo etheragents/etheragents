@@ -4,7 +4,7 @@
 //   NETWORK=sepolia RPC_URL=… DEPLOYER_PRIVATE_KEY=0x… OPERATORS=0x… node scripts/deploy.mjs
 //   NETWORK=mainnet RPC_URL=… DEPLOYER_PRIVATE_KEY=0x… ADMIN=0x… TREASURY=0x… OPERATORS=0x… CONFIRM_MAINNET=yes node scripts/deploy.mjs
 // Optional: AGENT_FEE (ETH, default 0.002), COIN_FEE (ETH, default 0), START_MCAP / GRAD_MCAP (ETH, defaults
-// 0.0707 / 3.8 = Auton's 1.55 SOL → 83.33 SOL at 1 ETH ≈ 21.9 SOL).
+// 0.0707 / 3.8).
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

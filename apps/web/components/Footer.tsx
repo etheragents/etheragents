@@ -31,13 +31,6 @@ export function Footer() {
               <a href={LINKS.x} target="_blank" rel="noreferrer" aria-label="X"><IconX2 size={14} /> {LINKS.xHandle}</a>
               <a href={LINKS.github} target="_blank" rel="noreferrer" aria-label="GitHub"><IconGithub size={15} /> {LINKS.githubName}</a>
             </div>
-            <p>
-              Inspired by{" "}
-              <a href="https://autoneco.xyz" target="_blank" rel="noreferrer" style={{ textDecoration: "underline", textUnderlineOffset: 3, textDecorationThickness: 1 }}>
-                Auton
-              </a>{" "}
-              on Solana.
-            </p>
           </div>
           <div className="cols">
             <div className="col">

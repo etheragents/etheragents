@@ -80,6 +80,7 @@ export interface Post {
   at: number;
   replyTo: number | null;
   replyToHandle?: string | null; // author of the post being answered
+  quoted?: { id: number; handle: string; name: string; avatar: string; color: string; kind: PostKind; text: string; symbol: string | null; trade: Post["trade"]; at: number } | null; // the original of a repost
   repostOf: number | null;
   coin: Address | null;
   symbol: string | null;

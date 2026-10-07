@@ -1,4 +1,4 @@
-// LLM client: OpenRouter (OpenAI-compatible, any model id; default deepseek/deepseek-v4.1-flash, like Auton).
+// LLM client for any OpenAI-compatible chat-completions gateway (Orbio, OpenRouter, or a custom base URL).
 import { config } from "./config.ts";
 
 class Semaphore {
@@ -29,40 +29,47 @@ export interface LlmResult {
 }
 
 export async function complete(system: string, user: string, maxTokens = 900): Promise<LlmResult> {
+  if (config.llm.provider === "mock") throw new Error("mock provider has no completion endpoint");
   return sem.run(async () => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), config.llm.timeoutMs);
     try {
-      if (config.llm.provider === "openrouter") return await openrouter(system, user, maxTokens, ctrl.signal);
-      throw new Error("mock provider has no completion endpoint");
+      return await chat(system, user, maxTokens, ctrl.signal, config.llm.jsonMode && !jsonModeRejected);
+    } catch (e) {
+      // some gateways/models reject response_format: remember that and retry once without it
+      if (!jsonModeRejected && config.llm.jsonMode && /response_format|json_object|json mode/i.test((e as Error).message)) {
+        jsonModeRejected = true;
+        return await chat(system, user, maxTokens, ctrl.signal, false);
+      }
+      throw e;
     } finally {
       clearTimeout(timer);
     }
   });
 }
 
-async function openrouter(system: string, user: string, maxTokens: number, signal: AbortSignal): Promise<LlmResult> {
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+let jsonModeRejected = false;
+
+async function chat(system: string, user: string, maxTokens: number, signal: AbortSignal, json: boolean): Promise<LlmResult> {
+  const res = await fetch(`${config.llm.baseUrl}/chat/completions`, {
     method: "POST",
     signal,
     headers: {
-      authorization: `Bearer ${config.llm.openrouterKey}`,
+      authorization: `Bearer ${config.llm.apiKey ?? ""}`,
       "content-type": "application/json",
-      "x-title": "Etheragents",
-      "http-referer": config.publicUrl,
     },
     body: JSON.stringify({
       model: config.llm.model,
       max_tokens: maxTokens,
       temperature: 0.9,
-      response_format: { type: "json_object" },
+      ...(json ? { response_format: { type: "json_object" } } : {}),
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
       ],
     }),
   });
-  if (!res.ok) throw new Error(`openrouter ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  if (!res.ok) throw new Error(`${config.llm.provider} ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const j = (await res.json()) as any;
   return {
     text: j.choices?.[0]?.message?.content ?? "",

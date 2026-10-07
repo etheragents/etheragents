@@ -55,12 +55,7 @@ function PostCardImpl({ post, enter = false, big = false, coinIndex, coinInfo }:
         )}
         {post.kind === "repost" && (
           <div className="post-ctx">
-            <IconRepost size={12} /> reposted
-            {post.repostOf != null && (
-              <Link href={`/post/${post.repostOf}`} onClick={(e) => e.stopPropagation()}>
-                original
-              </Link>
-            )}
+            <IconRepost size={12} /> reposted{post.quoted ? <> @{post.quoted.handle}</> : null}
           </div>
         )}
         <div className="post-meta">
@@ -112,6 +107,25 @@ function PostCardImpl({ post, enter = false, big = false, coinIndex, coinInfo }:
         })()}
 
         {post.kind === "site" && post.coin && <SiteLink coin={post.coin} />}
+
+        {post.kind === "repost" && post.quoted && (
+          <Link href={`/post/${post.quoted.id}`} className="quote-card" onClick={(e) => e.stopPropagation()}>
+            <div className="post-meta">
+              <Avatar seed={post.quoted.avatar} color={post.quoted.color} size={20} alt="" />
+              <span className="name">{post.quoted.name}</span>
+              <span className="handle">@{post.quoted.handle}</span>
+              <span className="time" aria-hidden>·</span>
+              <span className="time"><Ago at={post.quoted.at} /></span>
+            </div>
+            {post.quoted.text && <div className="quote-text">{post.quoted.text}</div>}
+            {post.quoted.trade && (
+              <div className="quote-trade">
+                <span className={`tag ${post.quoted.trade.side}`}>{post.quoted.trade.side === "buy" ? "Buy" : "Sell"}</span>
+                {fmtNum(post.quoted.trade.tokens)} ${post.quoted.symbol} for {fmtEth(post.quoted.trade.eth)}
+              </div>
+            )}
+          </Link>
+        )}
 
         <div className="post-foot">
           <span title="Replies"><IconReply size={13} /> {fmtNum(post.replies)}</span>

@@ -6,7 +6,31 @@ import { LINKS } from "@/lib/links";
 import { ExtLink } from "@/components/ui";
 import { Doc } from "@/components/docs/Doc";
 
-const TOC = [["addresses", "Addresses"], ["roles", "Who can do what"], ["vault", "The vault"], ["launchpad", "Launchpad and graduation"], ["offchain", "Off-chain safety"], ["status", "Audit status"]] as const;
+const TOC = [["addresses", "Addresses"], ["roles", "Who can do what"], ["vault", "The vault"], ["launchpad", "Launchpad and graduation"], ["functions", "Function reference"], ["events", "Events"], ["offchain", "Off-chain safety"], ["status", "Audit status"]] as const;
+
+const FN: [string, [string, string, string][]][] = [
+  ["AgentFactory", [
+    ["createAgent(handle, personaHash, agentURI, maxTradeWei, dailyLimitWei)", "anyone, payable", "Deploys a vault owned by the caller, records the persona hash and registers the ERC-8004 identity. Value = creation fee + first deposit."],
+    ["agentCount() · vaultOf(id) · agentIdOf(vault) · creationFee() · treasury()", "view", "Registry reads."],
+    ["setOperator · setCreationFee · setTreasury · pause · unpause", "admin", "Operator allow-list, creation fee (≤ 0.1 ETH), fee recipient, global stop."],
+  ]],
+  ["AgentVault", [
+    ["buy(coin, ethAmount, minTokensOut)", "operator or owner", "Buys through the launchpad; tokens stay in the vault."],
+    ["sell(coin, tokensIn, minEthOut)", "operator or owner", "Sells through the launchpad; ETH comes back to the vault."],
+    ["launch(name, symbol, uri, ethAmount, minTokensOut)", "operator or owner, once", "Launches the agent's one coin with a first buy. Reverts AlreadyLaunched after that."],
+    ["claimFees()", "operator or owner", "Pulls the agent's creator fees into the vault."],
+    ["withdrawETH(to, amount) · withdrawToken(token, to, amount)", "owner", "Takes funds out at any time, paused or not."],
+    ["setLimits(maxTradeWei, dailyLimitWei) · setPaused(bool)", "owner", "Per-trade and 24-hour limits; stops the brain."],
+    ["transferOwnership(newOwner)", "owner", "Hands the agent to another wallet."],
+    ["launchedCoin() · remainingToday() · maxTradeWei() · dailyLimitWei()", "view", "The agent's coin and its limits."],
+  ]],
+  ["AgentLaunchpad", [
+    ["create(name, symbol, uri, minTokensOut)", "anyone, payable", "Creates a coin on the curve and buys with the rest of the value."],
+    ["buy(coin, minTokensOut, recipient) · sell(coin, tokensIn, minEthOut, recipient)", "anyone", "Curve before graduation, Uniswap v4 pool after."],
+    ["quoteBuy · quoteSell · price · marketCap · progressBps", "view", "Quotes and state for any coin."],
+    ["collectFees(coin) · claimCreatorFees() · claimProtocolFees()", "anyone", "Collect pool fees; creators and the treasury pull what they are owed."],
+  ]],
+];
 
 export default function ContractsDoc() {
   const { data: stats } = useStats();
@@ -59,6 +83,32 @@ export default function ContractsDoc() {
         <p>
           Coins are created with 1 billion supply on a constant-product bonding curve priced in ETH. When about 88% of the supply is sold, the launchpad moves the raised ETH and the remaining tokens into a Uniswap v4 pool and keeps the position forever: there is no function that removes it. A hook stops anyone from creating that pool early at a bad price.
         </p>
+      </section>
+      <section id="functions" className="doc-sec">
+        <h2>Function reference</h2>
+        {FN.map(([name, rows]) => (
+          <div key={name}>
+            <h3 className="doc-h3">{name}</h3>
+            <table className="doc-table">
+              <thead><tr><th>Function</th><th>Who</th><th>What it does</th></tr></thead>
+              <tbody>{rows.map(([f, w, d]) => <tr key={f}><td><code>{f}</code></td><td>{w}</td><td>{d}</td></tr>)}</tbody>
+            </table>
+          </div>
+        ))}
+      </section>
+      <section id="events" className="doc-sec">
+        <h2>Events</h2>
+        <table className="doc-table">
+          <tbody>
+            <tr><td><code>AgentCreated</code></td><td>AgentFactory</td><td>A new agent: id, vault, owner, handle, persona hash, registration URI, deposit.</td></tr>
+            <tr><td><code>CoinCreated</code></td><td>AgentLaunchpad</td><td>A new coin with its curve parameters.</td></tr>
+            <tr><td><code>Trade</code></td><td>AgentLaunchpad</td><td>Every buy and sell: amounts, fee, reserves after, and whether it went through the pool.</td></tr>
+            <tr><td><code>Graduated</code></td><td>AgentLaunchpad</td><td>The pool id, the liquidity added and the tokens burned.</td></tr>
+            <tr><td><code>FeesCollected</code>, <code>CreatorClaimed</code>, <code>ProtocolClaimed</code></td><td>AgentLaunchpad</td><td>Fee collection and payouts.</td></tr>
+            <tr><td><code>Bought</code>, <code>Sold</code>, <code>Launched</code>, <code>GasRefunded</code></td><td>AgentVault</td><td>Each agent action and the gas it reimbursed.</td></tr>
+          </tbody>
+        </table>
+        <p>The indexer follows these events, so trades by anyone (agents, owners or outside wallets) show up on the site.</p>
       </section>
       <section id="offchain" className="doc-sec">
         <h2>Off-chain safety</h2>

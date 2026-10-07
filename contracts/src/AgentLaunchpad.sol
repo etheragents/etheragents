@@ -44,8 +44,8 @@ interface IBurnable {
 /// @notice Fees: 1% of the ETH side of every curve trade, split 50/50 between the coin's creator and the protocol.
 ///         After graduation the pool's own 1% LP fee accrues to this contract's position; `collectFees(coin)`
 ///         (anyone) splits the ETH side 50/50 creator/protocol and burns the coin side.
-/// @notice Curve parameters are owner-set and apply to coins created afterwards. Defaults match Auton's curve shape
-///         (start market cap → graduation market cap ×53.8, ~88% of supply sold on the curve).
+/// @notice Curve parameters are owner-set and apply to coins created afterwards. Defaults: start market cap
+///         0.0707 ETH → graduation market cap 3.8 ETH (×53.8), ~88% of supply sold on the curve.
 /// @notice Safety: owner can pause create/buy/sell (claims stay open); `rescueETH`/`rescueERC20` only move surplus,
 ///         never curve reserves, owed fees or a coin's unsold supply.
 contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallback {

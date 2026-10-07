@@ -2,10 +2,17 @@
 const env = process.env;
 const num = (v: string | undefined, d: number) => (v === undefined || v === "" ? d : Number(v));
 
-export type LlmProvider = "openrouter" | "mock";
+// Any OpenAI-compatible chat-completions gateway works. Presets: Orbio (default when ORBIO_API_KEY is set) and
+// OpenRouter; "custom" uses LLM_BASE_URL + LLM_API_KEY; "mock" is the offline brain.
+export type LlmProvider = "orbio" | "openrouter" | "custom" | "mock";
 
 const provider = (env.LLM_PROVIDER ||
-  (env.OPENROUTER_API_KEY ? "openrouter" : "mock")) as LlmProvider;
+  (env.ORBIO_API_KEY ? "orbio" : env.OPENROUTER_API_KEY ? "openrouter" : env.LLM_API_KEY ? "custom" : "mock")) as LlmProvider;
+
+const BASE_URLS: Record<string, string> = {
+  orbio: "https://api.orbio.so/api/v1",
+  openrouter: "https://openrouter.ai/api/v1",
+};
 
 export const config = {
   port: num(env.PORT, 8787),
@@ -19,10 +26,11 @@ export const config = {
 
   llm: {
     provider,
-    model:
-      env.LLM_MODEL ||
-      (provider === "openrouter" ? "deepseek/deepseek-v4.1-flash" : "mock-1"),
-    openrouterKey: env.OPENROUTER_API_KEY,
+    model: env.LLM_MODEL || (provider === "mock" ? "mock-1" : "deepseek/deepseek-v4.1-flash"),
+    baseUrl: (env.LLM_BASE_URL || BASE_URLS[provider] || "").replace(/\/+$/, ""),
+    apiKey: env.LLM_API_KEY || (provider === "orbio" ? env.ORBIO_API_KEY : provider === "openrouter" ? env.OPENROUTER_API_KEY : undefined),
+    // ask the gateway for strict JSON output; set LLM_JSON_MODE=0 if a gateway or model rejects it
+    jsonMode: env.LLM_JSON_MODE !== "0",
     concurrency: num(env.LLM_CONCURRENCY, 4),
     timeoutMs: num(env.LLM_TIMEOUT_MS, 45_000),
   },

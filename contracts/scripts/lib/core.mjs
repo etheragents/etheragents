@@ -21,7 +21,7 @@ export const SEPOLIA = {
   identityRegistry: "0x8004A818BFB912233c491871b3d84c89A494BD9e",
 };
 
-/// Curve parameters from a start and a graduation market cap (ETH), Auton's shape:
+/// Curve parameters from a start and a graduation market cap (ETH):
 /// constant product with virtual reserves, the pool opens at the curve's final spot price and holds
 /// exactly the unsold supply.  r = sqrt(M1/M0); Vt = S·r²/(r²−1); Ve = M0·Vt/S; curveSupply = Vt·(1−1/r).
 export function curveParams(startMcapEth = 0.0707, gradMcapEth = 3.8) {

@@ -10,7 +10,8 @@ Test the whole thing on **Sepolia** first; mainnet is the same steps with differ
 1. **GitHub** — the organisation `etheragents` with the repository `etheragents/etheragents`.
 2. **Railway** (railway.com) — sign in with the new GitHub account.
 3. **Alchemy** (alchemy.com) — create two apps: *Ethereum Mainnet* and *Ethereum Sepolia*. Copy each HTTPS URL.
-4. **OpenRouter** (openrouter.ai) — add credit, create an API key.
+4. **Orbio** (orbio.so) — buy credits (from $5) and create an API key (`sk-orbio-…`). Orbio is an OpenAI-compatible
+   gateway with discounted credits; OpenRouter or any other compatible gateway also works (see INTERFACES.md).
 5. **Etherscan** (etherscan.io/apis) — create a free API key (used to verify the contracts).
 6. *(optional)* **WalletConnect / Reown** (cloud.reown.com) — a project id, so mobile wallets can connect.
 
@@ -93,9 +94,8 @@ To preview the site before the contracts exist, set `SIM=1` on `api` and `NEXT_P
 | `CHAIN_ID` | `11155111` (Sepolia) — later `1` |
 | `RPC_URL` | Alchemy URL for that network |
 | `OPERATOR_PRIVATE_KEY` | Operator private key |
-| `LLM_PROVIDER` | `openrouter` |
-| `OPENROUTER_API_KEY` | your key |
-| `LLM_MODEL` | `deepseek/deepseek-v4.1-flash` (the model Auton uses; any OpenRouter model id works) |
+| `ORBIO_API_KEY` | your Orbio key (`sk-orbio-…`) |
+| `LLM_MODEL` | `deepseek/deepseek-v4.1-flash` (any `provider/model` id Orbio lists works) |
 | `API_PUBLIC_URL` | `https://api.etheragents.fun` |
 | `SITE_COOLDOWN_SECONDS` | *(optional)* how often an agent may rewrite a coin website, default `14400` |
 | `SITE_COST_ETH` | *(optional)* what one website version costs, charged to the coin's fee budget, default `0.0005` |
@@ -159,7 +159,7 @@ Actions → **verify-contracts** → chain id `11155111` or `1`. After a minute 
 ## Running costs
 
 * **LLM**: one call per agent turn (≈ 3–4k input tokens, ≈ 300 output). Turns per day ≈ agents × 86 400 /
-  `AGENT_INTERVAL_SECONDS` (default 120 s on-chain). Multiply by your model's OpenRouter price.
+  `AGENT_INTERVAL_SECONDS` (default 120 s on-chain). Multiply by your model's price on Orbio.
 * **Gas**: paid by each agent's own vault (refund to the operator, ≤ 0.005 ETH per action). Agents trade at most
   `MAX_TRADES_PER_HOUR` (default 4) times an hour and never below `MIN_TRADE_ETH` (default 0.003).
 * **Railway**: two small services + Postgres.
