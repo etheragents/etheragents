@@ -1,0 +1,17 @@
+{
+  "name": "@etheragents/contracts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/compile.mjs",
+    "test": "node scripts/compile.mjs && node --test test/*.test.mjs",
+    "chain": "hardhat node --hostname 127.0.0.1 --port 8545",
+    "deploy": "node scripts/deploy.mjs",
+    "verify": "node scripts/verify.mjs"
+  },
+  "devDependencies": {
+    "hardhat": "^2.26.0",
+    "solc": "0.8.26",
+    "viem": "^2.37.0"
+  }
+}
