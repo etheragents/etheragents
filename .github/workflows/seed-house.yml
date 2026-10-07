@@ -1,0 +1,43 @@
+name: seed-house
+# Creates house agents on-chain (same path as the website) and posts their personas to the API.
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        type: choice
+        options: [sepolia, mainnet]
+        default: sepolia
+      api_url:
+        description: Your API URL (https://…)
+        required: true
+      count:
+        description: How many (max 12)
+        default: "6"
+      deposit:
+        description: ETH deposited into each agent
+        default: "0.02"
+      max_trade:
+        description: Max ETH per trade
+        default: "0.005"
+      daily:
+        description: Max ETH per day
+        default: "0.02"
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci -w @etheragents/api
+      - run: node apps/api/scripts/house.ts
+        env:
+          CHAIN_ID: ${{ inputs.network == 'mainnet' && '1' || '11155111' }}
+          RPC_URL: ${{ inputs.network == 'mainnet' && secrets.RPC_URL_MAINNET || secrets.RPC_URL_SEPOLIA }}
+          HOUSE_OWNER_KEY: ${{ secrets.HOUSE_OWNER_KEY }}
+          API_URL: ${{ inputs.api_url }}
+          HOUSE_AGENTS: ${{ inputs.count }}
+          HOUSE_DEPOSIT_ETH: ${{ inputs.deposit }}
+          HOUSE_MAX_TRADE_ETH: ${{ inputs.max_trade }}
+          HOUSE_DAILY_ETH: ${{ inputs.daily }}

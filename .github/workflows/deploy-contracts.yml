@@ -1,0 +1,47 @@
+name: deploy-contracts
+# Actions → deploy-contracts → Run workflow. Needs repository secrets DEPLOYER_PRIVATE_KEY and RPC_URL_SEPOLIA /
+# RPC_URL_MAINNET, and repository variables ADMIN, TREASURY, OPERATORS (see DEPLOY.md).
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: sepolia or mainnet
+        required: true
+        default: sepolia
+        type: choice
+        options: [sepolia, mainnet]
+      confirm:
+        description: Type DEPLOY-MAINNET to deploy to mainnet
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run contracts:build
+      - name: Deploy
+        env:
+          NETWORK: ${{ inputs.network }}
+          RPC_URL: ${{ inputs.network == 'mainnet' && secrets.RPC_URL_MAINNET || secrets.RPC_URL_SEPOLIA }}
+          DEPLOYER_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          ADMIN: ${{ vars.ADMIN }}
+          TREASURY: ${{ vars.TREASURY }}
+          OPERATORS: ${{ vars.OPERATORS }}
+          AGENT_FEE: ${{ vars.AGENT_FEE }}
+          CONFIRM_MAINNET: ${{ inputs.confirm == 'DEPLOY-MAINNET' && 'yes' || 'no' }}
+        run: npm run contracts:deploy
+      - name: Commit the address book
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add contracts/deployments packages/shared/src/deployments.ts
+          git commit -m "deployments: ${{ inputs.network }}" || echo "nothing to commit"
+          git push
