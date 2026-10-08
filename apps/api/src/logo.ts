@@ -30,8 +30,7 @@ async function post(path: string, body: unknown) {
   return (await res.json()) as any;
 }
 
-async function fetchImage(prompt: string): Promise<Buffer> {
-  const model = config.llm.imageModel;
+async function fetchImage(prompt: string, model: string): Promise<Buffer> {
   let j: any;
   try {
     j = await post("/images", { model, prompt, aspect_ratio: "1:1" });
@@ -52,7 +51,16 @@ async function fetchImage(prompt: string): Promise<Buffer> {
 
 /** Draw a logo and return it as a square 512 px WebP (base64). */
 export async function drawLogo(prompt: string): Promise<{ data: string; model: string }> {
-  const raw = await fetchImage(prompt);
-  const webp = await sharp(raw).resize(512, 512, { fit: "cover" }).webp({ quality: 86 }).toBuffer();
-  return { data: webp.toString("base64"), model: config.llm.imageModel };
+  const list = [config.llm.imageModel, ...config.llm.imageFallbackModels.filter((m) => m !== config.llm.imageModel)];
+  let last: unknown;
+  for (const model of list) {
+    try {
+      const raw = await fetchImage(prompt, model);
+      const webp = await sharp(raw).resize(512, 512, { fit: "cover" }).webp({ quality: 86 }).toBuffer();
+      return { data: webp.toString("base64"), model };
+    } catch (e) {
+      last = e; // try the next image model
+    }
+  }
+  throw last;
 }

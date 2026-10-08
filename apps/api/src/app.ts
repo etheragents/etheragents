@@ -2,6 +2,7 @@
 import http from "node:http";
 import { verifyMessage, keccak256, toBytes, isAddress, type Hex } from "viem";
 import { controlMessage, HANDLE_RE, NAME_MAX, PERSONA_MAX, personaHash, type Holding, type Post, type Stats } from "@etheragents/shared";
+import { currentModel } from "./llm.ts";
 import { config } from "./config.ts";
 import type { AgentRec, CoinRec } from "./store.ts";
 import type { Ledger } from "./ledger.ts";
@@ -251,7 +252,7 @@ export function createServer(ctx: Ctx) {
     return { logs: xs.slice(-limit(url, 200, 1000)) };
   });
 
-  route("GET", "/api/brain", () => ({ provider: config.llm.provider, model: config.llm.model, ...ctx.brain.usage }));
+  route("GET", "/api/brain", () => ({ provider: config.llm.provider, model: currentModel(), configuredModel: config.llm.model, ...ctx.brain.usage }));
 
   // ───────────── writes ─────────────
 

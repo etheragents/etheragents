@@ -28,18 +28,42 @@ export interface LlmResult {
   outputTokens: number;
 }
 
+// Model failover: when the gateway says a model is unavailable, move to the next one in the list and keep using it;
+// every 10 minutes try the main model again.
+const models = () => [config.llm.model, ...config.llm.fallbackModels.filter((m) => m !== config.llm.model)];
+let active = 0;
+let switchedAt = 0;
+export const currentModel = () => models()[active] ?? config.llm.model;
+const unavailable = (msg: string) => /model_not_available|No provider|not.*(found|available|supported).*model|model.*(not|isn't).*(found|available|exist)|invalid model|unknown model/i.test(msg);
+
 export async function complete(system: string, user: string, maxTokens = 900): Promise<LlmResult> {
   if (config.llm.provider === "mock") throw new Error("mock provider has no completion endpoint");
+  if (active > 0 && Date.now() - switchedAt > 600_000) active = 0; // give the main model another chance
+  const list = models();
+  for (let tries = 0; ; tries++) {
+    try {
+      return await completeWith(list[active] ?? list[0], system, user, maxTokens);
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (!unavailable(msg) || tries >= list.length - 1) throw e;
+      active = (active + 1) % list.length;
+      switchedAt = Date.now();
+      console.warn(`[llm] model unavailable, switching to ${list[active]}: ${msg.slice(0, 120)}`);
+    }
+  }
+}
+
+async function completeWith(model: string, system: string, user: string, maxTokens: number): Promise<LlmResult> {
   return sem.run(async () => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), config.llm.timeoutMs);
     try {
-      return await chat(system, user, maxTokens, ctrl.signal, config.llm.jsonMode && !jsonModeRejected);
+      return await chat(model, system, user, maxTokens, ctrl.signal, config.llm.jsonMode && !jsonModeRejected);
     } catch (e) {
       // some gateways/models reject response_format: remember that and retry once without it
       if (!jsonModeRejected && config.llm.jsonMode && /response_format|json_object|json mode/i.test((e as Error).message)) {
         jsonModeRejected = true;
-        return await chat(system, user, maxTokens, ctrl.signal, false);
+        return await chat(model, system, user, maxTokens, ctrl.signal, false);
       }
       throw e;
     } finally {
@@ -50,7 +74,7 @@ export async function complete(system: string, user: string, maxTokens = 900): P
 
 let jsonModeRejected = false;
 
-async function chat(system: string, user: string, maxTokens: number, signal: AbortSignal, json: boolean): Promise<LlmResult> {
+async function chat(model: string, system: string, user: string, maxTokens: number, signal: AbortSignal, json: boolean): Promise<LlmResult> {
   const res = await fetch(`${config.llm.baseUrl}/chat/completions`, {
     method: "POST",
     signal,
@@ -59,7 +83,7 @@ async function chat(system: string, user: string, maxTokens: number, signal: Abo
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: config.llm.model,
+      model,
       max_tokens: maxTokens,
       temperature: 0.9,
       ...(json ? { response_format: { type: "json_object" } } : {}),

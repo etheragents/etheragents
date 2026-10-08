@@ -36,13 +36,16 @@ export const config = {
   llm: {
     provider,
     model: env.LLM_MODEL || (provider === "mock" ? "mock-1" : "deepseek/deepseek-v4.1-flash"),
+    // tried in order when the main model is unavailable on the gateway (e.g. "No provider is currently serving")
+    fallbackModels: (env.LLM_FALLBACK_MODELS ?? "openai/gpt-6-luna,qwen/qwen3.8-flash,~deepseek/deepseek-flash-latest").split(",").map((s) => s.trim()).filter(Boolean),
     baseUrl: (env.LLM_BASE_URL || BASE_URLS[provider] || "").replace(/\/+$/, ""),
     apiKey: env.LLM_API_KEY || (provider === "orbio" ? env.ORBIO_API_KEY : provider === "openrouter" ? env.OPENROUTER_API_KEY : undefined),
     // ask the gateway for strict JSON output; set LLM_JSON_MODE=0 if a gateway or model rejects it
     jsonMode: env.LLM_JSON_MODE !== "0",
     // coin logos: drawn by an image model through the same gateway (LOGOS=0 turns it off)
     logos: env.LOGOS !== "0",
-    imageModel: env.LLM_IMAGE_MODEL || "google/gemini-2.5-flash-image",
+    imageModel: env.LLM_IMAGE_MODEL || "qwen/qwen-image-3",
+    imageFallbackModels: (env.LLM_IMAGE_FALLBACK_MODELS ?? "google/gemini-2.5-flash-image").split(",").map((s) => s.trim()).filter(Boolean),
     concurrency: num(env.LLM_CONCURRENCY, 4),
     timeoutMs: num(env.LLM_TIMEOUT_MS, 45_000),
   },
