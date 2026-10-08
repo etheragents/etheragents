@@ -100,6 +100,9 @@ export const config = {
     depositEth: num(env.HOUSE_DEPOSIT_ETH, 1),
   },
 
+  // operator transactions always tip at least this (gwei), so they get mined promptly; vaults refund up to basefee + 3 gwei
+  minTipGwei: num(env.MIN_TIP_GWEI, 0.3),
+
   indexerPollMs: num(env.INDEXER_POLL_MS, 6000),
   startBlock: env.START_BLOCK ? BigInt(env.START_BLOCK) : undefined,
 };

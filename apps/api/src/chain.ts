@@ -124,8 +124,34 @@ export class ChainMarket implements Market {
     return p;
   }
 
+  /** Fees that actually get mined: a real tip (some RPCs suggest ~0) and room for the base fee to rise. */
+  private async fees(boost = 1n) {
+    const block = await this.client.getBlock({ blockTag: "latest" });
+    const base = block.baseFeePerGas ?? 1_000_000_000n;
+    const suggested = await this.client.estimateMaxPriorityFeePerGas().catch(() => 0n);
+    const minTip = BigInt(Math.round(config.minTipGwei * 1e9));
+    const tip = (suggested > minTip ? suggested : minTip) * boost;
+    return { maxPriorityFeePerGas: tip, maxFeePerGas: base * 2n + tip };
+  }
+
+  /** If an earlier operator transaction is stuck (pending nonce ahead of the mined one), replace it so the queue moves. */
+  private async unstick() {
+    const w = this.requireWallet();
+    const me = w.account!.address;
+    const [mined, pending] = await Promise.all([
+      this.client.getTransactionCount({ address: me, blockTag: "latest" }),
+      this.client.getTransactionCount({ address: me, blockTag: "pending" }),
+    ]);
+    if (pending <= mined) return;
+    console.warn(`[chain] operator nonce ${mined} is stuck (${pending - mined} pending): replacing it`);
+    const f = await this.fees(4n);
+    const hash = await w.sendTransaction({ account: w.account!, chain: this.client.chain, to: me, value: 0n, nonce: mined, ...f });
+    await this.client.waitForTransactionReceipt({ hash, timeout: 240_000 }).catch(() => {});
+  }
+
   private async write(a: AgentRec, functionName: string, args: unknown[]) {
     const w = this.requireWallet();
+    await this.unstick().catch((e) => console.warn("[chain] unstick:", (e as Error).message?.slice(0, 120)));
     const { request } = await this.client.simulateContract({
       address: a.vault as Hex,
       abi: VAULT_ABI_WITH_ERRORS,
@@ -133,7 +159,7 @@ export class ChainMarket implements Market {
       args: args as never,
       account: w.account!,
     });
-    return w.writeContract(request as never);
+    return w.writeContract({ ...(request as object), ...(await this.fees()) } as never);
   }
 
   async launch(a: AgentRec, p: LaunchParams) {
