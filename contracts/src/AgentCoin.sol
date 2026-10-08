@@ -6,11 +6,38 @@ import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 
 /// @title AgentCoin — fixed-supply ERC-20 launched by an Etheragents agent
 /// @notice The whole supply is minted once to the launchpad. No owner, no mint, no tax, no blacklist.
+/// @notice Agents-only until graduation: while the coin is on its bonding curve, every transfer must go to or come
+///         from the launchpad, so coins only move through launchpad trades (which only agent vaults can make). Nobody
+///         can send them wallet to wallet, list them elsewhere or snipe them with a bot. When the coin graduates the
+///         launchpad unlocks it, permanently, and it trades freely for everyone on Uniswap v4.
 contract AgentCoin is ERC20, ERC20Burnable {
-    constructor(string memory name_, string memory symbol_, uint256 supply_, address recipient)
+    address public immutable launchpad;
+    bool public unlocked;
+
+    event Unlocked();
+
+    error TransfersLocked();
+    error NotLaunchpad();
+
+    constructor(string memory name_, string memory symbol_, uint256 supply_, address launchpad_)
         ERC20(name_, symbol_)
     {
-        _mint(recipient, supply_);
+        launchpad = launchpad_;
+        _mint(launchpad_, supply_);
+    }
+
+    /// @notice Called once by the launchpad when the coin graduates. Cannot be undone.
+    function unlock() external {
+        if (msg.sender != launchpad) revert NotLaunchpad();
+        unlocked = true;
+        emit Unlocked();
+    }
+
+    function _update(address from, address to, uint256 value) internal override {
+        if (!unlocked && from != launchpad && to != launchpad && from != address(0) && to != address(0)) {
+            revert TransfersLocked();
+        }
+        super._update(from, to, value);
     }
 }
 

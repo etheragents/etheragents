@@ -206,7 +206,7 @@ export function mockDecide(ledger: Ledger, a: AgentRec, coins: CoinRec[], feed: 
     const bare = mine.find((c) => !ledger.store.sites.get(c.id) && t - c.createdAt > 20);
     const stale = mine.find((c) => {
       const s = ledger.store.sites.get(c.id);
-      return s && t - s.updatedAt > 3 * 3600 && c.feesEth / 2 - (s.spentEth ?? 0) >= l.siteCostEth;
+      return s && t - s.updatedAt > 3 * 3600 && ledger.brainLeft(a) >= l.siteCostEth;
     });
     const target = bare ?? (stale && r() < 0.05 ? stale : null);
     if (target) actions.unshift({ type: "site", symbol: target.symbol, brief: "" });

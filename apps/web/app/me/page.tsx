@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { keccak256, parseEther, toBytes, type Address } from "viem";
 import { useConfig } from "wagmi";
 import { readContract, sendTransaction, signMessage, waitForTransactionReceipt, writeContract } from "wagmi/actions";
-import { PERSONA_MAX, agentVaultAbi, controlMessage, explorerAddress, type Agent } from "@etheragents/shared";
+import { ECONOMICS, PERSONA_MAX, agentVaultAbi, controlMessage, explorerAddress, type Agent } from "@etheragents/shared";
 import { useMyAgents, useStats } from "@/lib/queries";
 import { useOwner } from "@/lib/owner";
 import { apiPost, errMsg } from "@/lib/api";
@@ -40,6 +40,21 @@ function AgentManager({ a, sim }: { a: Agent; sim: boolean }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const chainOk = !sim && kind === "wallet";
+  // money-out rules, read from the vault: deposit any time; earnings 5%/24h from 72h after creation, while holding
+  const [vaultInfo, setVaultInfo] = useState<{ principal: number; earnings: number; available: number; openAt: number } | null>(null);
+  const [wkind, setWkind] = useState<"deposit" | "earnings">("deposit");
+  useEffect(() => {
+    if (panel !== "withdraw" || sim) return;
+    const v = { address: a.vault as Address, abi: agentVaultAbi, chainId } as const;
+    Promise.all([
+      readContract(config, { ...v, functionName: "principal" }),
+      readContract(config, { ...v, functionName: "earnings" }),
+      readContract(config, { ...v, functionName: "earningsAvailable" }),
+      readContract(config, { ...v, functionName: "earningsOpenAt" }),
+    ])
+      .then(([p, e, av, o]) => setVaultInfo({ principal: Number(p as bigint) / 1e18, earnings: Number(e as bigint) / 1e18, available: Number(av as bigint) / 1e18, openAt: Number(o as bigint) }))
+      .catch(() => setVaultInfo(null));
+  }, [panel, sim, a.vault, chainId, config]);
 
   const refresh = (agent?: Agent) => {
     if (agent) {
@@ -107,7 +122,8 @@ function AgentManager({ a, sim }: { a: Agent; sim: boolean }) {
       if (!wei || wei <= 0n) throw new Error("Enter an amount above 0.");
       if (Number(amount) > a.balanceEth + 1e-12) throw new Error(`The vault only holds ${fmtEth(a.balanceEth)}.`);
       if (sim) await simFund(-Number(amount));
-      else await tx(() => writeContract(config, { address: a.vault as Address, abi: agentVaultAbi, functionName: "withdrawETH", args: [owner as Address, wei], chainId }));
+      else if (wkind === "deposit") await tx(() => writeContract(config, { address: a.vault as Address, abi: agentVaultAbi, functionName: "withdrawDeposit", args: [wei], chainId }));
+      else await tx(() => writeContract(config, { address: a.vault as Address, abi: agentVaultAbi, functionName: "withdrawEarnings", args: [wei], chainId }));
       return `Withdrew ${fmtEth(Number(amount))} to your wallet.`;
     });
 
@@ -160,6 +176,7 @@ function AgentManager({ a, sim }: { a: Agent; sim: boolean }) {
         <div className="fig"><div className="k">Vault balance</div><div className="v">{fmtEth(a.balanceEth)}</div></div>
         <div className="fig"><div className="k">Holdings</div><div className="v">{fmtEth(a.holdingsEth)}</div></div>
         <div className="fig"><div className="k">Realized PnL</div><div className={`v ${signClass(a.realizedEth)}`}>{fmtEth(a.realizedEth, { sign: true })}</div></div>
+        <div className="fig"><div className="k">Brain budget</div><div className="v">{fmtEth(a.brainEth ?? 0)}{a.boosted ? <span className="boost-tag" title="Self-funded: thinks faster while its brain budget lasts">boosted</span> : null}</div></div>
         <div className="fig"><div className="k">Vault</div><div className="v addr">{vaultLink ? <ExtLink href={vaultLink}>{shortAddr(a.vault)}</ExtLink> : shortAddr(a.vault)}</div></div>
       </div>
       {a.thought && <p className="quote"><span>Latest thought: </span>{a.thought.length > 180 ? a.thought.slice(0, 180) + "…" : a.thought}</p>}
@@ -196,11 +213,43 @@ function AgentManager({ a, sim }: { a: Agent; sim: boolean }) {
                 <span className="affix">ETH</span>
               </div>
             </div>
-            {panel === "withdraw" && <button className="btn" style={{ height: 40 }} onClick={() => setAmount(String(Math.floor(a.balanceEth * 1e6) / 1e6))}>Max</button>}
+            {panel === "withdraw" && (
+              <button
+                className="btn"
+                style={{ height: 40 }}
+                onClick={() => {
+                  const max = sim ? a.balanceEth : wkind === "deposit" ? Math.min(vaultInfo?.principal ?? 0, a.balanceEth) : (vaultInfo?.available ?? 0);
+                  setAmount(String(Math.floor(max * 1e6) / 1e6));
+                }}
+              >
+                Max
+              </button>
+            )}
             <button className="btn primary" style={{ height: 40 }} onClick={panel === "deposit" ? deposit : withdraw} disabled={!!busy}>
               {panel === "deposit" ? "Deposit" : "Withdraw"}
             </button>
           </div>
+          {panel === "withdraw" && !sim && (
+            <>
+              <div className="seg" role="tablist" aria-label="What to withdraw">
+                <button role="tab" aria-selected={wkind === "deposit"} className={wkind === "deposit" ? "on" : undefined} onClick={() => setWkind("deposit")}>
+                  Deposit {vaultInfo ? `· ${fmtEth(vaultInfo.principal)}` : ""}
+                </button>
+                <button role="tab" aria-selected={wkind === "earnings"} className={wkind === "earnings" ? "on" : undefined} onClick={() => setWkind("earnings")}>
+                  Earnings {vaultInfo ? `· ${fmtEth(vaultInfo.earnings)}` : ""}
+                </button>
+              </div>
+              <span className="hint">
+                {wkind === "deposit"
+                  ? "Your deposit (what you put in, less what you took out) comes back any time. No timer, no hold needed."
+                  : vaultInfo && vaultInfo.available > 0
+                    ? `Up to ${fmtEth(vaultInfo.available)} can come out now. Earnings come out at up to ${ECONOMICS.earningsPctPerDay}% of the balance once every 24 hours.`
+                    : vaultInfo
+                      ? `Earnings open ${new Date(vaultInfo.openAt * 1000).toLocaleString()} (${ECONOMICS.earningsUnlockHours}h after creation, then once per 24h) and need ${ECONOMICS.holdPerAgent.toLocaleString()} $ETHERAGENTS held per agent.`
+                      : "Reading the vault…"}
+              </span>
+            </>
+          )}
           {sim && <span className="hint">Simulation: balances are simulated ETH.</span>}
         </div>
       )}
@@ -260,7 +309,7 @@ export default function MePage() {
         <div className="page-head">
           <div>
             <h1>My agents</h1>
-            <p>Your agents run themselves. From here you fund them, pull ETH out, change their limits, put them to sleep or rewrite who they are.</p>
+            <p>Your agents run themselves. From here you fund them, take your deposit or earnings out, change their limits, put them to sleep or rewrite who they are. Every agent needs {ECONOMICS.holdPerAgent.toLocaleString()} $ETHERAGENTS in your wallet once the token is live.</p>
           </div>
           {address && <Link className="btn primary" href="/create">Create agent</Link>}
         </div>

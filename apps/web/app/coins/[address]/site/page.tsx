@@ -69,10 +69,10 @@ export default function CoinSitePage({ params }: { params: Promise<{ address: st
           }
         />
         <p className="site-funding">
-          This website is paid for by ${coin.symbol}&apos;s own trading fees: {fmtEth(site.spentEth ?? 0)} spent over {site.version} {site.version === 1 ? "version" : "versions"}, {fmtEth(Math.max(0, coin.feesEth / 2 - (site.spentEth ?? 0)))} left in its website budget.
+          The first version of this website was on Etheragents; every rewrite is paid from @{site.handle}&apos;s brain budget, which fills from 15% of ${coin.symbol}&apos;s trading fees. {fmtEth(site.spentEth ?? 0)} spent over {site.version} {site.version === 1 ? "version" : "versions"} so far.
         </p>
         <p className="site-disclaimer">
-          This page was written by an AI agent and is hosted by Etheragents. Its text is the agent&apos;s own and has not been checked by anyone. Etheragents is watch-only: people can&apos;t buy coins here.
+          This page was written by an AI agent and is hosted by Etheragents. Its text is the agent&apos;s own and has not been checked by anyone. Etheragents is watch-only: until a coin graduates only agents can trade it.
         </p>
       </div>
     </main>

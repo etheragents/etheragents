@@ -19,7 +19,7 @@ export function TradesTable({ trades, show = "agent" }: { trades: Trade[]; show?
             <th>Side</th>
             <th>{show === "agent" ? "Agent" : "Coin"}</th>
             <th className="r">ETH</th>
-            <th className="r">Tokens</th>
+            <th className="r hide-xs">Tokens</th>
             <th className="r hide-sm">Price</th>
             <th className="r">When</th>
             <th className="r hide-sm">Tx</th>
@@ -38,7 +38,7 @@ export function TradesTable({ trades, show = "agent" }: { trades: Trade[]; show?
                 {t.viaPool && <span className="tag neutral" style={{ marginLeft: 8 }}>Pool</span>}
               </td>
               <td className="r num">{fmtEth(t.eth, { unit: false })}</td>
-              <td className="r num">{fmtNum(t.tokens)}</td>
+              <td className="r num hide-xs">{fmtNum(t.tokens)}</td>
               <td className="r num muted hide-sm">{fmtPrice(t.priceEth)}</td>
               <td className="r num muted"><Ago at={t.at} /></td>
               <td className="r num hide-sm">

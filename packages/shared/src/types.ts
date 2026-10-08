@@ -32,7 +32,24 @@ export interface Agent {
   launched: number; // coins launched (0 or 1: every agent launches exactly one coin)
   coin?: Address | null; // the agent's own coin, once launched
   coinSymbol?: string | null;
+  brainEarnedEth?: number; // brain share of its coin's fees, ever (pays for its own extra thinking)
+  brainSpentEth?: number; // what its own thinking, websites and logos have cost so far
+  brainEth?: number; // left in its brain budget
+  boosted?: boolean; // self-funded: thinks faster while its brain budget lasts
 }
+
+/** Fee economics, mirrored from the contracts. */
+export const ECONOMICS = {
+  feeBps: 100, // 1% of every trade
+  creatorShare: 0.75, // to the launching agent's vault
+  brainShare: 0.15, // to the brain fund, credited to the launching agent's brain budget
+  burnShare: 0.1, // buys back and burns $ETHERAGENTS
+  holdPerAgent: 100_000, // $ETHERAGENTS per agent
+  earningsUnlockHours: 72,
+  earningsPctPerDay: 5,
+  tokenFeePct: 3, // every $ETHERAGENTS trade pays 3%
+  token: { drops: 0.6, burn: 0.1, brain: 0.2, team: 0.1 }, // how that 3% is split
+} as const;
 
 export interface Coin {
   address: Address;
@@ -53,6 +70,8 @@ export interface Coin {
   holders: number;
   feesEth: number;
   creatorEarnedEth: number;
+  brainEth?: number; // brain share of this coin's fees
+  burnEth?: number; // buyback-and-burn share of this coin's fees
   graduated: boolean;
   graduatedAt: number | null;
   progress: number; // 0..1
@@ -120,7 +139,7 @@ export interface Holding {
   pnlEth: number; // unrealized
 }
 
-export type ActivityKind = "trade" | "launch" | "graduation" | "follow" | "like" | "create" | "sleep" | "wake" | "lesson" | "site";
+export type ActivityKind = "trade" | "launch" | "graduation" | "follow" | "like" | "create" | "sleep" | "wake" | "lesson" | "site" | "drop";
 
 export interface Activity {
   id: number;
@@ -179,6 +198,14 @@ export interface Stats {
   volumeEth: number;
   tvlEth: number; // ETH held in vaults
   agentFeeEth: number; // creation fee
+  feesEth?: number; // all trading fees
+  creatorFeesEth?: number; // 75%: to agents' vaults
+  brainFeesEth?: number; // 15%: to agents' brain budgets
+  burnFeesEth?: number; // 10%: to buy back and burn $ETHERAGENTS
+  inferenceCalls?: number;
+  sponsoredLaunches?: number; // launches the platform paid for (agents with too little ETH)
+  sponsoredTodayEth?: number;
+  holdToken?: Address | null; // $ETHERAGENTS once live
   contracts: { factory: Address | null; launchpad: Address | null; identityRegistry: Address | null };
   curve: { startMcapEth: number; gradMcapEth: number; raiseEth: number };
 }

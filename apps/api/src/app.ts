@@ -59,6 +59,14 @@ export function createServer(ctx: Ctx) {
       volumeEth: round(coins.reduce((s, c) => s + c.volumeEth, 0)),
       tvlEth: round(agents.reduce((s, a) => s + toEth(BigInt(a.balanceWei)), 0)),
       agentFeeEth: market instanceof ChainMarket ? market.agentFeeEth : 0,
+      feesEth: round(coins.reduce((s, c) => s + c.feesEth, 0)),
+      creatorFeesEth: round(coins.reduce((s, c) => s + c.creatorEarnedEth, 0)),
+      brainFeesEth: round(coins.reduce((s, c) => s + (c.brainEth ?? 0), 0)),
+      burnFeesEth: round(coins.reduce((s, c) => s + (c.burnEth ?? 0), 0)),
+      inferenceCalls: ctx.brain?.usage.calls ?? 0,
+      sponsoredLaunches: store.meta.sponsoredLaunches ?? 0,
+      sponsoredTodayEth: store.meta.sponsorDay === Math.floor(Date.now() / 86400000) ? round(store.meta.sponsorSpentEth ?? 0) : 0,
+      holdToken: market instanceof ChainMarket ? market.holdToken : null,
       contracts: market.contracts(),
       curve: market.curve(),
     };
@@ -166,6 +174,9 @@ export function createServer(ctx: Ctx) {
         break;
       case "volume":
         xs.sort((a, b) => b.volumeEth - a.volumeEth);
+        break;
+      case "holders":
+        xs.sort((a, b) => b.holders - a.holders || b.mcapEth - a.mcapEth);
         break;
       case "graduating":
         xs = xs.filter((c) => !c.graduated).sort((a, b) => b.progress - a.progress);
@@ -304,6 +315,9 @@ export function createServer(ctx: Ctx) {
       const ok = await verifyMessage({ address: a.owner as Hex, message: controlMessage(a.id, signedAction, nonce), signature: signature as Hex }).catch(() => false);
       if (!ok) throw new HttpError(401, "signature does not match the agent's owner");
     }
+    // below the $ETHERAGENTS hold the owner can't change its agents (they keep trading)
+    if (action === "persona" && market instanceof ChainMarket && !(await market.holdOk(a.owner).catch(() => true)))
+      throw new HttpError(403, "hold 100,000 $ETHERAGENTS per agent to change your agents");
     a.controlNonce = nonce;
     if (action === "sleep") a.asleep = true;
     if (action === "wake") {
@@ -358,6 +372,13 @@ export function createServer(ctx: Ctx) {
     if (req.method === "OPTIONS") return void res.writeHead(204).end();
     try {
       if (req.method === "GET" && url.pathname === "/api/stream") return hub.attach(res);
+      const logo = url.pathname.match(/^\/api\/img\/logo\/(0x[0-9a-fA-F]{40})\.webp$/);
+      if (req.method === "GET" && logo) {
+        const rec = store.logos.get(logo[1].toLowerCase());
+        if (!rec) throw new HttpError(404, "no logo");
+        res.writeHead(200, { "content-type": "image/webp", "cache-control": "public, max-age=31536000, immutable" });
+        return void res.end(Buffer.from(rec.data, "base64"));
+      }
       const img = url.pathname.match(/^\/api\/img\/(agent|coin)\/([^/]+)\.svg$/);
       if (req.method === "GET" && img) {
         const key = decodeURIComponent(img[2]);

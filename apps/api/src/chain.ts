@@ -34,6 +34,15 @@ export class ChainMarket implements Market {
   readonly d: Deployment;
   private coinFee = 0n;
   agentFeeEth = 0; // AgentFactory.creationFee, read at start
+  private gas = 0; // gwei, refreshed by the indexer loop
+  gasGwei() {
+    return this.gas;
+  }
+  coinFeeEth() {
+    return toEth(this.coinFee);
+  }
+  holdToken: Hex | null = null; // $ETHERAGENTS once AgentFactory.setHold is called (re-read every few minutes)
+  private holdReadAt = 0;
   private queue: Promise<unknown> = Promise.resolve();
   private syncing: Promise<void> | null = null;
   private blockTimes = new Map<bigint, number>();
@@ -55,6 +64,19 @@ export class ChainMarket implements Market {
     if (!this.wallet) console.warn("[chain] OPERATOR_PRIVATE_KEY not set — indexing only, agents cannot act");
   }
 
+  /** $ETHERAGENTS hold check for an owner (true before the token is set). */
+  async holdOk(owner: string): Promise<boolean> {
+    return (await this.client.readContract({ address: this.d.factory, abi: agentFactoryAbi, functionName: "holdOk", args: [owner as Hex] })) as boolean;
+  }
+
+  async refreshHoldToken() {
+    if (Date.now() - this.holdReadAt < 300_000) return this.holdToken;
+    this.holdReadAt = Date.now();
+    const t = (await this.client.readContract({ address: this.d.factory, abi: agentFactoryAbi, functionName: "holdToken" }).catch(() => null)) as Hex | null;
+    this.holdToken = t && !/^0x0+$/.test(t) ? t : null;
+    return this.holdToken;
+  }
+
   async start() {
     this.coinFee = (await this.client.readContract({ address: this.d.launchpad, abi: agentLaunchpadAbi, functionName: "creationFee" })) as bigint;
     this.agentFeeEth = toEth((await this.client.readContract({ address: this.d.factory, abi: agentFactoryAbi, functionName: "creationFee" })) as bigint);
@@ -69,6 +91,8 @@ export class ChainMarket implements Market {
       for (;;) {
         try {
           await this.sync();
+          await this.refreshHoldToken().catch(() => null);
+          this.gas = Number(await this.client.getGasPrice().catch(() => 0n)) / 1e9 || this.gas;
         } catch (e) {
           console.error("[indexer]", (e as Error).message);
         }
@@ -87,13 +111,13 @@ export class ChainMarket implements Market {
   }
 
   /** Serialised: one operator nonce stream. Simulate → send → wait → index up to that block. */
-  private exec(fn: () => Promise<Hex>): Promise<{ hash: Hex; logs: Log[] }> {
+  private exec(fn: () => Promise<Hex>): Promise<{ hash: Hex; logs: Log[]; gasEth: number }> {
     const run = async () => {
       const hash = await fn();
       const r = await this.client.waitForTransactionReceipt({ hash, timeout: 180_000 });
       if (r.status !== "success") throw new Error("transaction reverted " + hash);
       await this.syncTo(r.blockNumber);
-      return { hash, logs: r.logs as Log[] };
+      return { hash, logs: r.logs as Log[], gasEth: toEth(r.gasUsed * r.effectiveGasPrice) };
     };
     const p = this.queue.then(run, run);
     this.queue = p.catch(() => {});
@@ -117,12 +141,12 @@ export class ChainMarket implements Market {
     const value = p.ethWei + this.coinFee;
     const fake = { virtualEth: this.d.curve.virtualEth, virtualToken: this.d.curve.virtualToken, curveSupply: this.d.curve.curveSupply, ethReserve: "0", tokensSold: "0" };
     const minOut = p.ethWei > 0n ? (curve.buy(fake, p.ethWei).out * (BPS - BigInt(config.brain.slippageBps))) / BPS : 0n;
-    const { hash, logs } = await this.exec(() => this.write(a, "launch", [p.name, p.symbol, uri, value, minOut]));
+    const { hash, logs, gasEth } = await this.exec(() => this.write(a, "launch", [p.name, p.symbol, uri, value, minOut]));
     const ev = parseEventLogs({ abi: agentLaunchpadAbi, logs: logs as never, eventName: "CoinCreated" })[0] as any;
     const coin = ev ? this.ledger.store.coins.get(String(ev.args.coin).toLowerCase()) : undefined;
     if (!coin) throw new Error("launch indexed without a coin");
     await this.refreshBalance(a);
-    return { coin, tx: hash };
+    return { coin, tx: hash, gasEth };
   }
 
   async buy(a: AgentRec, c: CoinRec, ethWei: bigint) {

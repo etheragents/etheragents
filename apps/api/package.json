@@ -2,7 +2,9 @@
   "name": "@etheragents/api",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "dev": "node --watch src/main.ts",
     "start": "node src/main.ts",
@@ -13,6 +15,7 @@
   "dependencies": {
     "@etheragents/shared": "*",
     "pg": "^8.16.0",
+    "sharp": "^0.34.5",
     "viem": "^2.37.0"
   },
   "devDependencies": {

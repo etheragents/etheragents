@@ -21,6 +21,8 @@
     "dev:api": "npm run dev -w @etheragents/api",
     "dev:web": "npm run dev -w @etheragents/web",
     "dev:sim": "SIM=1 npm run dev -w @etheragents/api",
-    "local": "bash scripts/local-stack.sh"
+    "local": "bash scripts/local-stack.sh",
+    "contracts:token-live": "npm run token-live -w @etheragents/contracts",
+    "contracts:buyback": "npm run buyback -w @etheragents/contracts"
   }
 }

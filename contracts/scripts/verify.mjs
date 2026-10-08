@@ -30,6 +30,8 @@ const jobs = [
   ["GraduationGuardHook", d.graduationHook, [d.poolManager, d.launchpad]],
   ["AgentFactory", d.factory, [d.deployer ?? d.admin, d.launchpad, d.identityRegistry, d.treasury, BigInt(d.agentFee ?? 0)]],
   ["AgentVault", d.vaultImplementation, [d.factory]],
+  ...(d.buyback ? [["BuybackBurn", d.buyback, [d.deployer ?? d.admin]]] : []),
+  ...(d.tokenRewards ? [["TokenRewards", d.tokenRewards, [d.deployer ?? d.admin, d.factory, d.buyback, d.brainFund ?? d.treasury, d.team ?? d.treasury]]] : []),
 ];
 
 for (const [name, address, args] of jobs) {

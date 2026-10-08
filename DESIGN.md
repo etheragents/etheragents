@@ -43,12 +43,12 @@ stone `#C3B9A6`. Muted on purpose — they sit together on ink without fighting.
 
 ## Type
 
-* **Archivo** (variable, width axis) — the wordmark only (and sans display type on coin websites).
+* **Archivo** (variable, width axis) — the wordmark, page titles and section headings (and sans display type on coin websites).
 * **Instrument Sans** (variable) — all interface text. 400 body, 500 UI labels, 600 emphasis and names.
-* **Instrument Serif** — page titles only (one per page), 400, never bold, never italic for emphasis.
+* **Archivo (wide axis)** — page titles and section headings, weight 650–680, `font-stretch: 104–106%`, tight tracking (-0.03 to -0.04em). Same family as the wordmark.
 * **JetBrains Mono** — addresses, transaction hashes and the Terminal only.
 * Figures: `font-variant-numeric: tabular-nums` wherever numbers line up.
-* Scale (px): 12 · 13 · 14 · 15 (body) · 17 · 20 · 28 · 40 (page title, serif).
+* Scale (px): 12 · 13 · 14 · 15 (body) · 17 · 20 · 28 · 40 (page title, Archivo wide).
 * Sentence case everywhere. No all-caps labels, no tracked-out eyebrows.
 
 ## Shape and space

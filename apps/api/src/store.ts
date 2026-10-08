@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import pg from "pg";
 import type { Activity, Agent, Alert, BrainLog, Candle, Coin, CoinSite, Post, Trade } from "@etheragents/shared";
+import type { LogoRec } from "./logo.ts";
 
 export interface AgentRec extends Agent {
   balanceWei: string; // vault ETH (authoritative in sim, cached from chain otherwise)
@@ -18,6 +19,8 @@ export interface AgentRec extends Agent {
   memory: string[]; // short notes about its own recent actions (fed back to the brain)
   lastError: string | null;
   feesClaimedEth: number;
+  brainEarnedEth?: number;
+  brainSpentEth?: number;
 }
 
 export interface CoinRec extends Coin {
@@ -51,6 +54,9 @@ export interface Meta {
   nextActivityId: number;
   nextAlertId: number;
   nextAgentId: number; // sim only
+  sponsorDay?: number; // unix day of the sponsored-launch budget below
+  sponsorSpentEth?: number; // gas the platform paid for sponsored launches that day
+  sponsoredLaunches?: number; // all time
   lastBlock: string; // indexer cursor
   simNonce: number;
 }
@@ -105,12 +111,13 @@ export class Store {
   alerts = new Coll<Alert>("alerts");
   edges = new Coll<Edge>("edges");
   sites = new Coll<CoinSite>("sites");
+  logos = new Coll<LogoRec>("logos");
   metaColl = new Coll<Meta>("meta");
   logs: BrainLog[] = []; // not persisted
   nextLogId = 1;
 
   private all(): Coll<any>[] {
-    return [this.agents, this.coins, this.posts, this.trades, this.positions, this.activity, this.alerts, this.edges, this.sites, this.metaColl];
+    return [this.agents, this.coins, this.posts, this.trades, this.positions, this.activity, this.alerts, this.edges, this.sites, this.logos, this.metaColl];
   }
 
   get meta(): Meta {

@@ -3,6 +3,8 @@
 import type { Activity, ActivityKind, Agent, Alert, AlertKind, BrainLog, Candle, Coin, CoinSite, Post, PostKind, SiteContent, Trade } from "@etheragents/shared";
 import type { AgentRec, CoinRec, Position, Store } from "./store.ts";
 import type { Hub } from "./hub.ts";
+import { ECONOMICS } from "@etheragents/shared";
+import { config } from "./config.ts";
 import { colorFor, fmtEth, fmtTokens, now, toEth, toTokens } from "./util.ts";
 
 const CANDLE = 60; // 1-minute candles: coins here move fast
@@ -93,7 +95,37 @@ export class Ledger {
       feesClaimedEth,
       ...pub
     } = a;
-    return { ...pub, balanceEth: toEth(BigInt(balanceWei)) };
+    const brainEth = this.brainLeft(a);
+    return { ...pub, balanceEth: toEth(BigInt(balanceWei)), brainEarnedEth: a.brainEarnedEth ?? 0, brainSpentEth: a.brainSpentEth ?? 0, brainEth, boosted: brainEth >= config.brain.boostMinEth };
+  }
+
+  // ───────────── self-funding brains ─────────────
+
+  /** What is left in an agent's brain budget (the brain share of its coin's fees, minus what its thinking cost). */
+  brainLeft(a: AgentRec) {
+    return Math.max(0, (a.brainEarnedEth ?? 0) - (a.brainSpentEth ?? 0));
+  }
+
+  /** Charge the agent's own brain budget. Returns false (and charges nothing) when it can't cover `eth`. */
+  chargeBrain(a: AgentRec, eth: number) {
+    if (eth <= 0 || this.brainLeft(a) < eth) return false;
+    a.brainSpentEth = (a.brainSpentEth ?? 0) + eth;
+    this.store.agents.touch(a);
+    return true;
+  }
+
+  /** Split a coin's trading fee: 75% creator vault, 15% creator's brain budget, 10% buyback-and-burn. */
+  private splitFee(c: CoinRec, feeEth: number) {
+    if (feeEth <= 0) return;
+    c.feesEth += feeEth;
+    c.creatorEarnedEth += feeEth * ECONOMICS.creatorShare;
+    c.brainEth = (c.brainEth ?? 0) + feeEth * ECONOMICS.brainShare;
+    c.burnEth = (c.burnEth ?? 0) + feeEth * ECONOMICS.burnShare;
+    const creator = this.store.agents.get(c.agent);
+    if (creator) {
+      creator.brainEarnedEth = (creator.brainEarnedEth ?? 0) + feeEth * ECONOMICS.brainShare;
+      this.store.agents.touch(creator);
+    }
   }
 
   publicCoin(c: CoinRec): Coin {
@@ -112,7 +144,8 @@ export class Ledger {
       orig && oa
         ? { id: orig.id, handle: oa.handle, name: oa.name, avatar: oa.avatar, color: oa.color, kind: orig.kind, text: orig.text, symbol: orig.symbol, trade: orig.trade, at: orig.at }
         : null;
-    return { ...p, handle: a.handle, name: a.name, avatar: a.avatar, color: a.color, followers: a.followers, replyToHandle, quoted };
+    const coinNow = p.coin ? this.store.coins.get(p.coin.toLowerCase()) : undefined;
+    return { ...p, image: coinNow?.image ?? p.image, handle: a.handle, name: a.name, avatar: a.avatar, color: a.color, followers: a.followers, replyToHandle, quoted };
   }
 
   emitAgent(a: AgentRec) {
@@ -160,6 +193,15 @@ export class Ledger {
     this.store.bumpMeta();
     this.store.alerts.set(al);
     this.hub.emit("alert", al);
+  }
+
+  // ───────────── coin logos ─────────────
+
+  setLogo(c: CoinRec, data: string, prompt: string, model: string) {
+    const at = now();
+    this.store.logos.set({ id: c.id, data, prompt, model, at });
+    c.image = `/api/img/logo/${c.address.toLowerCase()}.webp?v=${at}`;
+    this.emitCoin(c);
   }
 
   // ───────────── coin websites ─────────────
@@ -433,8 +475,7 @@ export class Ledger {
     if (e.tokensSoldWei !== undefined) c.tokensSold = e.tokensSoldWei.toString();
     c.trades++;
     c.volumeEth += eth;
-    c.feesEth += toEth(e.feeWei);
-    c.creatorEarnedEth += toEth(e.feeWei) / 2;
+    this.splitFee(c, toEth(e.feeWei));
     c.lastAt = at;
     this.setPrice(c, e.priceEth, at, eth);
     if (!c.graduated) {
@@ -482,8 +523,7 @@ export class Ledger {
   onFeesCollected(coin: string, ethFeesWei: bigint) {
     const c = this.store.coins.get(coin.toLowerCase());
     if (!c) return;
-    c.feesEth += toEth(ethFeesWei);
-    c.creatorEarnedEth += toEth(ethFeesWei) / 2;
+    this.splitFee(c, toEth(ethFeesWei));
     this.emitCoin(c);
   }
 

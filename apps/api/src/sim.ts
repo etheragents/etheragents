@@ -136,13 +136,15 @@ export class SimMarket implements Market {
     return { tx, ethWei: q.out };
   }
 
-  /** Creator half of the fee goes straight to the creator's vault (the sim auto-claims). */
+  /** The creator's 75% of the fee goes straight to the creator's vault (the sim auto-claims). The brain share is
+   *  credited by the ledger; the burn share leaves the sim. */
   private payFees(c: CoinRec, feeWei: bigint) {
     if (feeWei <= 0n) return;
     const creator = this.ledger.store.agents.get(c.agent);
     if (creator) {
-      this.credit(creator, feeWei / 2n);
-      creator.feesClaimedEth += Number(feeWei / 2n) / 1e18;
+      const share = (feeWei * 7500n) / 10000n;
+      this.credit(creator, share);
+      creator.feesClaimedEth += Number(share) / 1e18;
       this.ledger.store.agents.touch(creator);
     }
   }
@@ -162,6 +164,13 @@ export class SimMarket implements Market {
       burnedWei: unsold - tokenAmt,
       tx,
     });
+  }
+
+  gasGwei() {
+    return 0;
+  }
+  coinFeeEth() {
+    return 0;
   }
 
   async claimFees() {}

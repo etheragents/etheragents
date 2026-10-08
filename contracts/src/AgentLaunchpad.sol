@@ -33,6 +33,14 @@ interface IBurnable {
     function burn(uint256 amount) external;
 }
 
+interface IUnlockable {
+    function unlock() external;
+}
+
+interface IAgentRegistry {
+    function agentIdOf(address vault) external view returns (uint256);
+}
+
 /// @title AgentLaunchpad — ETH bonding-curve launchpad for Etheragents coins, graduating to Uniswap v4
 /// @notice Anyone (in practice: agent vaults) creates a coin: 1,000,000,000 supply on a virtual constant-product
 ///         curve priced in ETH: x = virtualEth + ethReserve, y = virtualToken - tokensSold, x·y = virtualEth·virtualToken.
@@ -41,9 +49,13 @@ interface IBurnable {
 ///         GraduationGuardHook so nobody can front-run it), all of the coin's ETH plus the matching amount of unsold
 ///         coins go in as full-range liquidity owned by this contract forever (no function removes it), and the rest
 ///         of the unsold supply is burned. After that, `buy`/`sell` route through the pool, so agents use one API.
-/// @notice Fees: 1% of the ETH side of every curve trade, split 50/50 between the coin's creator and the protocol.
-///         After graduation the pool's own 1% LP fee accrues to this contract's position; `collectFees(coin)`
-///         (anyone) splits the ETH side 50/50 creator/protocol and burns the coin side.
+/// @notice Agents only until graduation: while a coin is on its curve, only registered agent vaults (AgentFactory)
+///         can create, buy or sell, always for themselves, and AgentCoin refuses every transfer that does not go
+///         through this contract. Graduation unlocks the coin for everyone.
+/// @notice Fees: 1% of the ETH side of every trade, split 75% to the coin's creator (its agent vault), 15% to the
+///         brain fund (pays for the agents' thinking: the creator agent's own inference budget) and 10% to buy back
+///         and burn $ETHERAGENTS. After graduation the pool's own 1% LP fee accrues to this contract's position;
+///         `collectFees(coin)` (anyone) splits the ETH side the same way and burns the coin side.
 /// @notice Curve parameters are owner-set and apply to coins created afterwards. Defaults: start market cap
 ///         0.0707 ETH → graduation market cap 3.8 ETH (×53.8), ~88% of supply sold on the curve.
 /// @notice Safety: owner can pause create/buy/sell (claims stay open); `rescueETH`/`rescueERC20` only move surplus,
@@ -56,7 +68,9 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
     uint256 public constant SUPPLY = 1_000_000_000e18;
     uint256 public constant BPS = 10_000;
     uint256 public constant FEE_BPS = 100; // 1% of the ETH side
-    uint256 public constant CREATOR_SHARE_BPS = 5_000; // of the fee
+    uint256 public constant CREATOR_SHARE_BPS = 7_500; // of the fee: the launching agent's vault
+    uint256 public constant BRAIN_SHARE_BPS = 1_500; // of the fee: the brain fund (agents' inference)
+    // the remaining 1_000 bps of the fee buy back and burn $ETHERAGENTS
     uint24 public constant POOL_FEE = 10_000; // 1% LP fee on graduated pools
     int24 public constant TICK_SPACING = 200;
     uint256 public constant MAX_CREATION_FEE = 0.05 ether;
@@ -86,6 +100,9 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
     ICoinDeployer public coinDeployer;
     IHooks public graduationHook;
     address public treasury;
+    address public brainFund; // receives the brain share; pays for the agents' inference
+    address public buyback; // BuybackBurn; until it is set the burn share waits here
+    IAgentRegistry public agentRegistry; // the AgentFactory; when set, only its vaults trade coins on the curve
 
     uint256 public virtualEth;
     uint256 public virtualToken;
@@ -98,6 +115,8 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
 
     mapping(address => uint256) public creatorEthOwed;
     uint256 public protocolEthOwed;
+    uint256 public brainEthOwed;
+    uint256 public burnEthOwed;
     uint256 public totalCurveEth;
     uint256 public totalCreatorOwed;
 
@@ -132,6 +151,9 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
     event CurveSet(uint256 virtualEth, uint256 virtualToken, uint256 curveSupply);
     event CreationFeeSet(uint256 fee);
     event TreasurySet(address treasury);
+    event BrainFundSet(address brainFund);
+    event BuybackSet(address buyback);
+    event FeesRouted(uint256 toTreasury, uint256 toBrainFund, uint256 toBuyback);
 
     error UnknownCoin();
     error Slippage();
@@ -143,6 +165,8 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
     error FeeTooHigh();
     error EthTransferFailed();
     error Insolvent();
+    error AgentsOnly();
+    error ZeroAddress();
 
     constructor(
         address owner_,
@@ -171,6 +195,22 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
         graduationHook = h;
     }
 
+    function setAgentRegistry(IAgentRegistry r) external onlyOwner {
+        if (address(agentRegistry) != address(0)) revert AlreadySet();
+        agentRegistry = r;
+    }
+
+    function setBrainFund(address b) external onlyOwner {
+        if (b == address(0)) revert ZeroAddress();
+        brainFund = b;
+        emit BrainFundSet(b);
+    }
+
+    function setBuyback(address b) external onlyOwner {
+        buyback = b;
+        emit BuybackSet(b);
+    }
+
     function setCurve(uint256 ve, uint256 vt, uint256 cs) external onlyOwner {
         _setCurve(ve, vt, cs);
     }
@@ -182,6 +222,7 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
     }
 
     function setTreasury(address t) external onlyOwner {
+        if (t == address(0)) revert ZeroAddress();
         treasury = t;
         emit TreasurySet(t);
     }
@@ -196,7 +237,9 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
 
     /// @notice Only ETH above every liability (curve reserves + owed fees) can be rescued.
     function rescueETH(address to, uint256 amount) external onlyOwner {
-        if (address(this).balance < totalCurveEth + totalCreatorOwed + protocolEthOwed + amount) revert Insolvent();
+        if (address(this).balance < totalCurveEth + totalCreatorOwed + protocolEthOwed + brainEthOwed + burnEthOwed + amount) {
+            revert Insolvent();
+        }
         _sendEth(to, amount);
     }
 
@@ -230,6 +273,7 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
     {
         if (address(coinDeployer) == address(0) || address(graduationHook) == address(0)) revert NotConfigured();
         if (msg.value < creationFee) revert ZeroAmount();
+        _agentsOnly(false, msg.sender);
         coin = coinDeployer.deploy(name_, symbol_, SUPPLY);
         coins[coin] = Coin({
             creator: msg.sender,
@@ -261,6 +305,7 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
         Coin storage c = coins[coin];
         if (c.creator == address(0)) revert UnknownCoin();
         if (msg.value == 0) revert ZeroAmount();
+        _agentsOnly(c.graduated, recipient);
         if (c.graduated) {
             tokensOut = _poolSwap(coin, true, msg.value, minTokensOut, recipient);
         } else {
@@ -278,12 +323,20 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
         Coin storage c = coins[coin];
         if (c.creator == address(0)) revert UnknownCoin();
         if (tokensIn == 0) revert ZeroAmount();
+        _agentsOnly(c.graduated, recipient);
         IERC20(coin).safeTransferFrom(msg.sender, address(this), tokensIn);
         if (c.graduated) {
             ethOut = _poolSwap(coin, false, tokensIn, minEthOut, recipient);
         } else {
             ethOut = _curveSell(coin, tokensIn, minEthOut, recipient);
         }
+    }
+
+    /// @dev On the curve only agent vaults trade, and only for themselves.
+    function _agentsOnly(bool graduated, address recipient) internal view {
+        if (graduated) return;
+        if (address(agentRegistry) == address(0)) revert NotConfigured(); // closed until the factory is wired
+        if (recipient != msg.sender || agentRegistry.agentIdOf(msg.sender) == 0) revert AgentsOnly();
     }
 
     function _curveBuy(address coin, uint256 value, uint256 minOut, address recipient) internal returns (uint256 out) {
@@ -339,9 +392,11 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
 
     function _accrueFee(address creator, uint256 fee) internal {
         uint256 toCreator = fee * CREATOR_SHARE_BPS / BPS;
+        uint256 toBrain = fee * BRAIN_SHARE_BPS / BPS;
         creatorEthOwed[creator] += toCreator;
         totalCreatorOwed += toCreator;
-        protocolEthOwed += fee - toCreator;
+        brainEthOwed += toBrain;
+        burnEthOwed += fee - toCreator - toBrain;
     }
 
     // ───────────────────────────── graduation ─────────────────────────────
@@ -349,6 +404,7 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
     function _graduate(address coin) internal {
         Coin storage c = coins[coin];
         c.graduated = true;
+        IUnlockable(coin).unlock();
         uint256 ethAmt = c.ethReserve;
         uint256 x = c.virtualEth + ethAmt;
         uint256 y = c.virtualToken - c.tokensSold;
@@ -372,8 +428,8 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
         );
         poolManager.initialize(p.key, sqrtP);
         (uint256 usedEth, uint256 usedTokens) = abi.decode(poolManager.unlock(abi.encode(OP_SEED, coin)), (uint256, uint256));
-        protocolEthOwed += ethAmt - usedEth; // rounding dust
-        uint256 burned = unsold - usedTokens;
+        if (ethAmt > usedEth) protocolEthOwed += ethAmt - usedEth; // rounding dust
+        uint256 burned = unsold > usedTokens ? unsold - usedTokens : 0;
         if (burned > 0) IBurnable(coin).burn(burned);
         emit Graduated(coin, PoolId.unwrap(p.key.toId()), usedEth, usedTokens, burned);
     }
@@ -501,12 +557,24 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
         emit CreatorClaimed(msg.sender, amount);
     }
 
-    /// @notice Sends the protocol's fees to the treasury. Anyone may call.
+    /// @notice Routes the protocol's shares: creation fees to the treasury, the brain share to the brain fund
+    ///         (the treasury until one is set) and the burn share to BuybackBurn (held here until it is set).
+    ///         Anyone may call.
     function claimProtocolFees() external nonReentrant returns (uint256 amount) {
         amount = protocolEthOwed;
         protocolEthOwed = 0;
+        uint256 brain = brainEthOwed;
+        brainEthOwed = 0;
+        uint256 burn;
+        if (buyback != address(0)) {
+            burn = burnEthOwed;
+            burnEthOwed = 0;
+        }
         _sendEth(treasury, amount);
+        _sendEth(brainFund != address(0) ? brainFund : treasury, brain);
+        _sendEth(buyback, burn);
         emit ProtocolClaimed(treasury, amount);
+        emit FeesRouted(amount, brain, burn);
     }
 
     function _sendEth(address to, uint256 amount) internal {
@@ -516,6 +584,10 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
     }
 
     // ───────────────────────────── views ─────────────────────────────
+
+    function isCoin(address coin) external view returns (bool) {
+        return coins[coin].creator != address(0);
+    }
 
     function coinCount() external view returns (uint256) {
         return allCoins.length;

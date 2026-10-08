@@ -31,6 +31,9 @@ export const config = {
     apiKey: env.LLM_API_KEY || (provider === "orbio" ? env.ORBIO_API_KEY : provider === "openrouter" ? env.OPENROUTER_API_KEY : undefined),
     // ask the gateway for strict JSON output; set LLM_JSON_MODE=0 if a gateway or model rejects it
     jsonMode: env.LLM_JSON_MODE !== "0",
+    // coin logos: drawn by an image model through the same gateway (LOGOS=0 turns it off)
+    logos: env.LOGOS !== "0",
+    imageModel: env.LLM_IMAGE_MODEL || "google/gemini-2.5-flash-image",
     concurrency: num(env.LLM_CONCURRENCY, 4),
     timeoutMs: num(env.LLM_TIMEOUT_MS, 45_000),
   },
@@ -51,9 +54,33 @@ export const config = {
     maxTradesPerHour: num(env.MAX_TRADES_PER_HOUR, env.SIM === "1" ? 30 : 4),
     // a coin's website can be rewritten at most this often (each version is an extra, larger LLM call)
     siteCooldownSeconds: num(env.SITE_COOLDOWN_SECONDS, env.SIM === "1" ? 900 : 4 * 3600),
-    // every version of a coin's website costs this much, paid from the protocol's half of that coin's trading fees.
-    // The first version is advanced at launch and repaid from the coin's first fees; rewrites need the budget.
+    // every rewrite of a coin's website costs this much from its agent's brain budget (15% of its coin's fees).
+    // The first version is on the platform.
     siteCostEth: num(env.SITE_COST_ETH, env.SIM === "1" ? 0.0002 : 0.0005),
+    // self-funding: 15% of a coin's fees go to its agent's brain budget. While that budget lasts the agent thinks
+    // more often (interval × BOOST_FACTOR) and pays for its own inference, websites and logo out of it.
+    boostFactor: num(env.BOOST_FACTOR, 0.4),
+    // sponsored launches: an agent with too little ETH still launches its coin (no first buy); the operator pays the
+    // gas and the vault can't refund it. Capped per day and skipped when gas is expensive (agents wait and retry).
+    sponsorLaunches: env.SPONSOR_LAUNCHES !== "0",
+    sponsorMaxEthPerDay: num(env.SPONSOR_MAX_ETH_PER_DAY, 1),
+    sponsorMaxGwei: num(env.SPONSOR_MAX_GWEI, 5),
+    boostMinEth: num(env.BOOST_MIN_ETH, env.SIM === "1" ? 0.00005 : 0.0002),
+    logoCostEth: num(env.LOGO_COST_ETH, 0.0002),
+    // inference price used to charge brain budgets (USD per 1M tokens) and the ETH price to convert it
+    priceInUsd: num(env.LLM_PRICE_IN_USD, 0.3),
+    priceOutUsd: num(env.LLM_PRICE_OUT_USD, 1.2),
+    ethUsd: num(env.ETH_USD, 4000),
+  },
+
+  // chain mode: the operator key also routes protocol fees and drops $ETHERAGENTS rewards (see keeper.ts)
+  keeper: {
+    enabled: env.KEEPER !== "0",
+    everySeconds: num(env.KEEPER_EVERY_SECONDS, 600),
+    minRouteEth: num(env.KEEPER_MIN_ROUTE_ETH, 0.01), // don't spend gas routing less than this
+    minDropEth: num(env.KEEPER_MIN_DROP_ETH, 0.002),
+    dropSlice: num(env.KEEPER_DROP_SLICE, 0.1), // share of the drop pool dropped per round
+    dropsPerRound: num(env.KEEPER_DROPS_PER_ROUND, 6),
   },
 
   house: {

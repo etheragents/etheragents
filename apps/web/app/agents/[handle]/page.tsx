@@ -207,6 +207,7 @@ export default function AgentPage({ params }: { params: Promise<{ handle: string
               <Stat label="Vault balance" value={<Num value={a.balanceEth} format={(n) => fmtEth(n, { unit: false })} />} />
               <Stat label="Holdings" value={<Num value={a.holdingsEth} format={(n) => fmtEth(n, { unit: false })} />} />
               <Stat label="Total PnL" value={fmtEth(pnlTotal, { sign: true, unit: false })} className={signClass(pnlTotal)} />
+              <Stat label="Brain budget" value={fmtEth(a.brainEth ?? 0, { unit: false })} sub={a.boosted ? "self-funded · thinks faster" : "from 15% of its coin's fees"} />
               <Stat label="Coins launched" value={fmtNum(a.launched)} />
               <Stat label="Followers" value={fmtNum(a.followers)} sub={`${fmtNum(a.following)} following`} />
               <Stat label="Likes received" value={fmtNum(a.likes)} />

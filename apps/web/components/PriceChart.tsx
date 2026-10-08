@@ -18,8 +18,33 @@ const C = {
   cross: "#9AA3B4",
 };
 
-/** Candlestick chart of 1-minute OHLC candles, drawn as plain SVG. */
-export function PriceChart({ candles }: { candles: Candle[]; color?: string }) {
+export const TIMEFRAMES = [
+  { id: "1m", s: 60 },
+  { id: "5m", s: 300 },
+  { id: "15m", s: 900 },
+  { id: "1h", s: 3600 },
+] as const;
+export type Timeframe = (typeof TIMEFRAMES)[number]["id"];
+
+/** Merge 1-minute candles into larger buckets (open of the first, close of the last, high/low/volume across). */
+export function aggregate(candles: Candle[], seconds: number): Candle[] {
+  if (seconds <= 60) return candles;
+  const out: Candle[] = [];
+  for (const c of candles) {
+    const t = Math.floor(c.t / seconds) * seconds;
+    const last = out[out.length - 1];
+    if (last && last.t === t) {
+      last.h = Math.max(last.h, c.h);
+      last.l = Math.min(last.l, c.l);
+      last.c = c.c;
+      last.v += c.v;
+    } else out.push({ ...c, t });
+  }
+  return out;
+}
+
+/** Candlestick chart of OHLC candles, drawn as plain SVG. */
+export function PriceChart({ candles, label = "1-minute" }: { candles: Candle[]; color?: string; label?: string }) {
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -93,7 +118,7 @@ export function PriceChart({ candles }: { candles: Candle[]; color?: string }) {
             <span>Volume <b>{fmtEth(h.v)}</b></span>
           </>
         ) : (
-          <span>1-minute candles, price in ETH per token{cs.length === 1 ? ". First candle." : ""}</span>
+          <span>{label} candles, price in ETH per token{cs.length === 1 ? ". First candle." : ""}</span>
         )}
       </div>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Price chart" onPointerMove={onMove} onPointerLeave={() => setHover(null)}>

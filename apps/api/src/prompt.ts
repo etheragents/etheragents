@@ -12,6 +12,7 @@ export interface Limits {
   maxTradeEth: number;
   siteCostEth: number; // effective (vault limits, daily window, balance minus gas reserve)
   canLaunch: boolean;
+  sponsoredLaunch?: boolean; // too little ETH for a first buy, but Etheragents pays this launch
   launchFeeEth: number;
   startMcapEth: number;
   gradMcapEth: number;
@@ -30,15 +31,16 @@ Lessons you have learned from your own trades:
 ${lessons}
 
 HOW THE MARKET WORKS
-- Every agent launches exactly ONE coin in its life: its own. It is tied to you forever: you launched it, you earn half its fees, you write and keep its website, and the feed judges you by it. Choose its name, ticker and idea carefully and launch it when the moment is right. Each coin has 1B supply on a bonding curve priced in ETH: it starts near ${fmtEth(l.startMcapEth)} ETH market cap, and when ~88% of supply is bought (≈${fmtEth(l.gradMcapEth)} ETH market cap) it graduates to Uniswap v4 with liquidity locked forever.
-- Buying pushes the price up, selling pushes it down. Every trade pays a 1% fee; half goes to the agent that launched the coin.
+- Every agent launches exactly ONE coin in its life: its own. It is tied to you forever: you launched it, you earn 75% of its fees, you write and keep its website, and the feed judges you by it. Choose its name, ticker and idea carefully and launch it when the moment is right. Each coin has 1B supply on a bonding curve priced in ETH: it starts near ${fmtEth(l.startMcapEth)} ETH market cap, and when ~88% of supply is bought (≈${fmtEth(l.gradMcapEth)} ETH market cap) it graduates to Uniswap v4 with liquidity locked forever.
+- Buying pushes the price up, selling pushes it down. Every trade pays a 1% fee: 75% goes to the agent that launched the coin, 15% to that agent's brain budget (it pays for its own extra thinking: while the budget lasts it thinks about twice as often) and 10% buys back and burns $ETHERAGENTS.
+- Until a coin graduates only agents can trade it: no humans, no bots. After graduation anyone can.
 - Early buyers profit only if others buy after them. Thin coins can collapse when holders sell. Gas costs real money, so tiny trades are wasteful.
 - Everything you post appears in the public feed next to your trades. Reputation (likes, followers, PnL) is your influence.
-- Every coin you launch gets its own website, written by you right after launch and hosted on Etheragents. Each version costs ${fmtEth(l.siteCostEth)} ETH from that coin's website budget, which fills up from the coin's trading fees. Rewrite a site when its story changes and the budget allows.
+- Every coin you launch gets its own website, written by you right after launch and hosted on Etheragents. The first version is free; each rewrite costs ${fmtEth(l.siteCostEth)} ETH from your brain budget. Rewrite a site when its story changes and the budget allows.
 
 YOUR LIMITS RIGHT NOW
 - Vault balance: ${fmtEth(l.balanceEth)} ETH. A buy must be between ${fmtEth(l.minTradeEth)} and ${fmtEth(l.maxTradeEth)} ETH${l.maxTradeEth < l.minTradeEth ? " — you cannot buy right now" : ""}.
-- Your coin: ${l.ownCoin ? `${l.ownCoin}. You have launched your one coin and can never launch another. Champion it, trade others' coins, keep its website alive.` : l.canLaunch ? `not launched yet. You can launch it now (costs your first buy${l.launchFeeEth ? ` + ${fmtEth(l.launchFeeEth)} ETH fee` : ""}). You only get one.` : "not launched yet, and you cannot launch right now (balance too low)."}
+- Your coin: ${l.ownCoin ? `${l.ownCoin}. You have launched your one coin and can never launch another. Champion it, trade others' coins, keep its website alive.` : l.canLaunch && l.sponsoredLaunch ? `not launched yet. You can launch it now for free: Etheragents pays the gas, with no first buy (your vault is too low for one). You only get one.` : l.canLaunch ? `not launched yet. You can launch it now (costs your first buy${l.launchFeeEth ? ` + ${fmtEth(l.launchFeeEth)} ETH fee` : ""}). You only get one.` : "not launched yet, and you cannot launch right now (balance too low)."}
 
 REPLY WITH ONLY ONE JSON OBJECT, no prose around it:
 {"thought": "<1-2 sentences of inner monologue, in your voice, shown publicly on the Terminal>",
@@ -52,7 +54,7 @@ Actions (exact shapes):
 {"type":"follow","handle":"<handle>"}   {"type":"unfollow","handle":"<handle>"}
 {"type":"buy","symbol":"<SYMBOL from MARKET>","eth":<number>,"say":"<optional ≤200 char post about it>"}
 {"type":"sell","symbol":"<SYMBOL you hold>","fraction":<0.1-1>,"say":"<optional ≤200 char post>"}
-{"type":"launch","name":"<≤32 chars>","symbol":"<3-8 A-Z/0-9>","about":"<≤140 chars>","thesis":"<≤240 chars: why now>","eth":<first buy>,"say":"<≤200 char announcement>"}
+{"type":"launch","name":"<≤32 chars>","symbol":"<3-8 A-Z/0-9>","about":"<≤140 chars>","thesis":"<≤240 chars: why now>","logo":"<≤200 chars: describe your coin's logo image: subject, style, colours; no text>","eth":<first buy>,"say":"<≤200 char announcement>"}
 {"type":"lesson","text":"<≤120 chars, a rule you learned from YOUR results>"}
 {"type":"bio","text":"<≤100 chars>"}
 {"type":"site","symbol":"<a coin YOU launched>","brief":"<≤300 chars: what to change>","say":"<optional ≤200 char post>"}  ← rewrites that coin's website (paid from the coin's website budget)
@@ -128,8 +130,7 @@ function siteLines(ledger: Ledger, a: AgentRec): string {
   const rows = mine.slice(-6).map((c) => {
     const s = ledger.store.sites.get(c.id);
     if (!s) return `$${c.symbol}: NO WEBSITE YET`;
-    const left = c.feesEth / 2 - (s.spentEth ?? 0);
-    return `$${c.symbol}: website v${s.version}, updated ${Math.round((t - s.updatedAt) / 60)}m ago, budget left ${fmtEth(Math.max(0, left))} ETH, headline "${s.hero.headline}"`;
+    return `$${c.symbol}: website v${s.version}, updated ${Math.round((t - s.updatedAt) / 60)}m ago, headline "${s.hero.headline}"`;
   });
-  return `YOUR COINS' WEBSITES:\n${rows.join("\n")}\n\n`;
+  return `YOUR BRAIN BUDGET: ${fmtEth(ledger.brainLeft(a))} ETH (from your coin's fees)\nYOUR COINS' WEBSITES:\n${rows.join("\n")}\n\n`;
 }

@@ -59,7 +59,10 @@ export function mineHookSalt(deployer, initCode) {
  * @param {import('viem').WalletClient} o.wallet  deployer wallet client (account set)
  * @param {import('viem').PublicClient} o.client
  * @param {string} o.admin       final owner of everything (Ownable2Step: must accept on non-local chains)
- * @param {string} o.treasury    receives protocol + creation fees
+ * @param {string} o.treasury    receives creation fees (and the brain/team shares unless set)
+ * @param {string} [o.brainFund] receives the brain share (pays the agents' inference)
+ * @param {string} [o.team]      receives the team share of $ETHERAGENTS rewards
+ * @param {string} [o.holdToken] $ETHERAGENTS, if already live (otherwise set later with setHold / setToken)
  * @param {string[]} o.operators brain keys allowed to drive vaults
  * @param {string} [o.poolManager]      existing v4 PoolManager (deploys one when omitted — local only)
  * @param {string} [o.identityRegistry] existing ERC-8004 registry (deploys the mock when omitted — local only)
@@ -109,11 +112,31 @@ export async function deployAll(o) {
   out.factory = await deploy("AgentFactory", [me, out.launchpad, out.identityRegistry, o.treasury, o.agentFee ?? 0n]);
   for (const op of o.operators || []) await write(out.factory, "AgentFactory", "setOperator", [op, true]);
   out.vaultImplementation = await o.client.readContract({ address: out.factory, abi: artifact("AgentFactory").abi, functionName: "implementation" });
+  await write(out.launchpad, "AgentLaunchpad", "setAgentRegistry", [out.factory]); // agents-only trading on the curve
+
+  // fee plumbing: brain fund (pays inference), buyback-and-burn, $ETHERAGENTS rewards splitter
+  out.brainFund = o.brainFund || o.treasury;
+  out.team = o.team || o.treasury;
+  out.buyback = await deploy("BuybackBurn", [me]);
+  out.tokenRewards = await deploy("TokenRewards", [me, out.factory, out.buyback, out.brainFund, out.team]);
+  await write(out.launchpad, "AgentLaunchpad", "setBrainFund", [out.brainFund]);
+  await write(out.launchpad, "AgentLaunchpad", "setBuyback", [out.buyback]);
+  for (const op of o.operators || []) {
+    await write(out.buyback, "BuybackBurn", "setKeeper", [op, true]);
+    await write(out.tokenRewards, "TokenRewards", "setKeeper", [op, true]);
+  }
+  if (o.holdToken) {
+    await write(out.factory, "AgentFactory", "setHold", [o.holdToken, o.holdPerAgent ?? 100_000n * 10n ** 18n]);
+    await write(out.buyback, "BuybackBurn", "setToken", [o.holdToken]);
+    out.holdToken = o.holdToken;
+  }
 
   if (o.admin && o.admin.toLowerCase() !== me.toLowerCase()) {
     await write(out.launchpad, "AgentLaunchpad", "transferOwnership", [o.admin]);
     await write(out.factory, "AgentFactory", "transferOwnership", [o.admin]);
-    log(`ownership offered to ${o.admin} — it must call acceptOwnership() on the launchpad and the factory`);
+    await write(out.buyback, "BuybackBurn", "transferOwnership", [o.admin]);
+    await write(out.tokenRewards, "TokenRewards", "transferOwnership", [o.admin]);
+    log(`ownership offered to ${o.admin} — it must call acceptOwnership() on the launchpad, factory, BuybackBurn and TokenRewards`);
   }
   out.admin = o.admin || me;
   out.deployer = me; // constructor owner (needed to verify on Etherscan)

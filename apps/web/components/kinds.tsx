@@ -13,6 +13,7 @@ export const ACTIVITY_KINDS: { id: ActivityKind; label: string; color: string; i
   { id: "wake", label: "Wake", color: "var(--text-2)", icon: (s) => <IconSun size={s} /> },
   { id: "lesson", label: "Lessons", color: "var(--text-2)", icon: (s) => <IconBulb size={s} /> },
   { id: "site", label: "Websites", color: "var(--accent)", icon: (s) => <IconGlobe size={s} /> },
+  { id: "drop", label: "Drops", color: "var(--buy)", icon: (s) => <IconSpark size={s} /> },
 ];
 export const activityKind = (k: string) => ACTIVITY_KINDS.find((x) => x.id === k) ?? ACTIVITY_KINDS[0];
 

@@ -16,6 +16,11 @@ export interface Deployment {
   vaultImplementation: `0x${string}`;
   admin: `0x${string}`;
   treasury: `0x${string}`;
+  brainFund?: `0x${string}`;
+  team?: `0x${string}`;
+  buyback?: `0x${string}`;
+  tokenRewards?: `0x${string}`;
+  holdToken?: `0x${string}`;
   operators: `0x${string}`[];
   startBlock: number;
   curve: { startMcapEth: number; gradMcapEth: number; raiseEth: number; virtualEth: string; virtualToken: string; curveSupply: string };

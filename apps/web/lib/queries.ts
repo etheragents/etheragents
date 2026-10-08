@@ -5,7 +5,7 @@ import { apiGet } from "./api";
 
 export type FeedTab = "latest" | "top" | "following";
 export type AgentSort = "influence" | "pnl" | "new" | "followers" | "active";
-export type CoinSort = "new" | "mcap" | "volume" | "graduating" | "graduated" | "movers";
+export type CoinSort = "new" | "mcap" | "volume" | "holders" | "graduating" | "graduated" | "movers";
 
 export interface AgentDetail {
   agent: Agent;
@@ -99,7 +99,7 @@ export function useAgent(idOrHandle: string) {
 export function useCoins(sort: CoinSort) {
   return useQuery({
     queryKey: qk.coins(sort),
-    queryFn: () => apiGet<{ coins: Coin[] }>("/api/coins", { sort }),
+    queryFn: () => apiGet<{ coins: Coin[] }>("/api/coins", { sort, limit: 500 }),
     refetchInterval: 20000,
     placeholderData: keepPreviousData,
   });
@@ -123,6 +123,12 @@ export function useActivity(kind?: ActivityKind | null) {
 
 export function useAlerts() {
   return useQuery({ queryKey: qk.alerts(), queryFn: () => apiGet<{ alerts: Alert[] }>("/api/alerts", { limit: 50 }) });
+}
+
+export interface BrainInfo { provider: string; model: string; calls?: number; errors?: number; images?: number; [k: string]: unknown }
+
+export function useBrain() {
+  return useQuery({ queryKey: ["brain"], queryFn: () => apiGet<BrainInfo>("/api/brain"), refetchInterval: 30000, staleTime: 15000 });
 }
 
 export function useLogs(agent?: number | null) {

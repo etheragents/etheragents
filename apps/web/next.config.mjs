@@ -11,6 +11,7 @@ const wcConnector = path.join(connectorsDir, "dist/esm/walletConnect.js");
 const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  devIndicators: false,
   transpilePackages: ["@etheragents/shared"],
   images: { unoptimized: true },
   outputFileTracingRoot: new URL("../../", import.meta.url).pathname,

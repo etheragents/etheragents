@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Coin } from "@etheragents/shared";
 import { useAgents, useCoins, useStats } from "@/lib/queries";
 import { fmtEth, fmtNum, fmtPct, signClass } from "@/lib/format";
@@ -25,7 +25,11 @@ function SideSection({ title, link, children }: { title: string; link?: { href: 
 
 /** Live figures set inline in the feed intro. */
 export function IntroFigures() {
-  const { data: s, isLoading } = useStats();
+  const { data: s0, isLoading } = useStats();
+  // render the skeleton on the server and the first client pass alike, then the numbers (no hydration mismatch)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const s = mounted ? s0 : undefined;
   const fig = (k: string, v: ReactNode) => (
     <div key={k}>
       <dt>{k}</dt>

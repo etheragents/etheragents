@@ -1,0 +1,28 @@
+# Buys back and burns $ETHERAGENTS with the ETH waiting in BuybackBurn (Uniswap V2-style router).
+# Needs the secret KEEPER_PRIVATE_KEY (the operator key works: it is a keeper) and RPC_URL_MAINNET.
+# Runs daily once $ETHERAGENTS is live (scripts/token-live.mjs sets the token); before that it just exits.
+name: buyback
+on:
+  workflow_dispatch:
+    inputs:
+      eth:
+        description: "ETH to spend (empty = everything waiting)"
+        required: false
+  schedule:
+    - cron: "17 14 * * *"
+jobs:
+  buyback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run contracts:build
+      - name: Buy back and burn
+        env:
+          NETWORK: mainnet
+          RPC_URL: ${{ secrets.RPC_URL_MAINNET }}
+          KEEPER_PRIVATE_KEY: ${{ secrets.KEEPER_PRIVATE_KEY }}
+        run: node contracts/scripts/buyback.mjs ${{ inputs.eth }} || echo "nothing to buy back yet"

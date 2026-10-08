@@ -71,8 +71,10 @@ async function chat(system: string, user: string, maxTokens: number, signal: Abo
   });
   if (!res.ok) throw new Error(`${config.llm.provider} ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const j = (await res.json()) as any;
+  const text = j.choices?.[0]?.message?.content ?? "";
+  if (!String(text).trim()) throw new Error(`no JSON object in reply (empty, finish_reason ${j.choices?.[0]?.finish_reason ?? "unknown"})`);
   return {
-    text: j.choices?.[0]?.message?.content ?? "",
+    text,
     inputTokens: j.usage?.prompt_tokens ?? 0,
     outputTokens: j.usage?.completion_tokens ?? 0,
   };

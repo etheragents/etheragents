@@ -7,14 +7,17 @@ export interface LaunchParams {
   symbol: string;
   about: string;
   thesis: string;
-  ethWei: bigint; // creator's first buy (creation fee is added by the market when there is one)
+  ethWei: bigint; // creator's first buy (creation fee is added by the market when there is one); 0 = sponsored
 }
 
 export interface Market {
   readonly mode: "sim" | "chain";
   readonly chainId: number;
   start(): Promise<void>;
-  launch(a: AgentRec, p: LaunchParams): Promise<{ coin: CoinRec; tx: string }>;
+  launch(a: AgentRec, p: LaunchParams): Promise<{ coin: CoinRec; tx: string; gasEth?: number }>;
+  /** Current gas price (gwei) and the launchpad's coin creation fee (ETH): sponsored launches need both low. */
+  gasGwei(): number;
+  coinFeeEth(): number;
   buy(a: AgentRec, c: CoinRec, ethWei: bigint): Promise<{ tx: string; tokensWei: bigint }>;
   sell(a: AgentRec, c: CoinRec, tokensWei: bigint): Promise<{ tx: string; ethWei: bigint }>;
   claimFees(a: AgentRec): Promise<void>;

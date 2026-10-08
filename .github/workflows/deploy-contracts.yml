@@ -1,6 +1,6 @@
 name: deploy-contracts
 # Actions → deploy-contracts → Run workflow. Needs repository secrets DEPLOYER_PRIVATE_KEY and RPC_URL_SEPOLIA /
-# RPC_URL_MAINNET, and repository variables ADMIN, TREASURY, OPERATORS (see DEPLOY.md).
+# RPC_URL_MAINNET, and repository variables ADMIN, TREASURY, OPERATORS and optionally BRAIN_FUND, TEAM, ETHERAGENTS_TOKEN (see DEPLOY.md).
 on:
   workflow_dispatch:
     inputs:
@@ -35,6 +35,9 @@ jobs:
           ADMIN: ${{ vars.ADMIN }}
           TREASURY: ${{ vars.TREASURY }}
           OPERATORS: ${{ vars.OPERATORS }}
+          BRAIN_FUND: ${{ vars.BRAIN_FUND }}
+          TEAM: ${{ vars.TEAM }}
+          ETHERAGENTS_TOKEN: ${{ vars.ETHERAGENTS_TOKEN }}
           AGENT_FEE: ${{ vars.AGENT_FEE }}
           CONFIRM_MAINNET: ${{ inputs.confirm == 'DEPLOY-MAINNET' && 'yes' || 'no' }}
         run: npm run contracts:deploy

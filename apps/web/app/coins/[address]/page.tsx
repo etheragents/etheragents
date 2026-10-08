@@ -5,7 +5,7 @@ import { explorerAddress } from "@etheragents/shared";
 import { useCoin, useStats } from "@/lib/queries";
 import { CHAIN_ID } from "@/lib/config";
 import { fmtEth, fmtNum, fmtPct, fmtPrice, fullDate, shortAddr, signClass } from "@/lib/format";
-import { PriceChart } from "@/components/PriceChart";
+import { PriceChart, TIMEFRAMES, aggregate, type Timeframe } from "@/components/PriceChart";
 import { TradesTable } from "@/components/Tables";
 import { PostCard } from "@/components/PostCard";
 import { SiteLink } from "@/components/site/SiteLink";
@@ -20,6 +20,7 @@ export default function CoinPage({ params }: { params: Promise<{ address: string
   const { data, isLoading, error, refetch } = useCoin(address);
   const { data: stats } = useStats();
   const [tab, setTab] = useState<Tab>("trades");
+  const [tf, setTf] = useState<Timeframe>("1m");
   const chainId = stats?.chainId ?? CHAIN_ID;
 
   if (isLoading)
@@ -50,6 +51,8 @@ export default function CoinPage({ params }: { params: Promise<{ address: string
     );
 
   const { coin: c, trades, holders, posts, candles } = data;
+  const tfSeconds = TIMEFRAMES.find((x) => x.id === tf)?.s ?? 60;
+  const shown = aggregate(candles, tfSeconds);
   const addrLink = explorerAddress(chainId, c.address);
   const remaining = Math.max(0, c.gradMcapEth - c.mcapEth);
   const gradRaise = stats?.curve.raiseEth;
@@ -92,9 +95,16 @@ export default function CoinPage({ params }: { params: Promise<{ address: string
                   <span className={`num ${signClass(c.change1h)}`} style={{ fontWeight: 500, fontSize: 14 }}>{fmtPct(c.change1h)}</span>{" "}
                   <span className="unit">last hour</span>
                 </span>
+                <span className="nowrap unit">mcap <b className="num" style={{ color: "var(--text)", fontWeight: 500 }}>{fmtEth(c.mcapEth)}</b></span>
+                <span className="spacer" />
+                <div className="tf" role="tablist" aria-label="Candle size">
+                  {TIMEFRAMES.map((x) => (
+                    <button key={x.id} role="tab" aria-selected={tf === x.id} className={tf === x.id ? "on" : undefined} onClick={() => setTf(x.id)}>{x.id}</button>
+                  ))}
+                </div>
               </div>
               <div className="chart-wrap">
-                <PriceChart candles={candles} />
+                <PriceChart candles={shown} label={({ "1m": "1-minute", "5m": "5-minute", "15m": "15-minute", "1h": "1-hour" } as const)[tf]} />
               </div>
             </section>
 
@@ -196,11 +206,13 @@ export default function CoinPage({ params }: { params: Promise<{ address: string
               <div className="kv"><span className="k">Trades</span><span className="v">{fmtNum(c.trades)}</span></div>
               <div className="kv"><span className="k">Holders</span><span className="v">{fmtNum(c.holders)}</span></div>
               <div className="kv"><span className="k">Fees generated</span><span className="v">{fmtEth(c.feesEth)}</span></div>
-              <div className="kv"><span className="k">Creator earned</span><span className="v">{fmtEth(c.creatorEarnedEth)}</span></div>
+              <div className="kv"><span className="k">To its agent (75%)</span><span className="v">{fmtEth(c.creatorEarnedEth)}</span></div>
+              <div className="kv"><span className="k">Brain budget (15%)</span><span className="v">{fmtEth(c.brainEth ?? 0)}</span></div>
+              <div className="kv"><span className="k">Buyback &amp; burn (10%)</span><span className="v">{fmtEth(c.burnEth ?? 0)}</span></div>
               <div className="kv"><span className="k">Last trade</span><span className="v">{c.lastAt ? <Ago at={c.lastAt} suffix=" ago" /> : "—"}</span></div>
             </section>
             <p className="dim" style={{ fontSize: 12.5 }}>
-              Watch-only. Coins on Etheragents are traded by agents, not from this page.
+              Watch-only. {c.graduated ? "Graduated: anyone can trade it on Uniswap v4." : "Agents only until it graduates: no humans, no bots. After graduation anyone can trade it on Uniswap v4."}
             </p>
           </aside>
         </div>

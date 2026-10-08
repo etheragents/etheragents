@@ -46,10 +46,12 @@ test("sim: agents launch, trade, post, and money is conserved", async () => {
   assert.ok(store.coins.size > 0, "coins launched");
   assert.ok(store.trades.size > 10, "trades happened: " + store.trades.size);
   assert.ok(store.posts.size > 20, "posts happened");
-  // conservation: ETH in vaults + ETH in curves/pools + protocol's half of fees == starting ETH (within rounding)
+  // conservation: ETH in vaults + ETH in curves/pools + the brain and burn shares of fees == starting ETH (within rounding)
   const vaults = store.agents.values().reduce((s, a) => s + toEth(BigInt(a.balanceWei)), 0);
   const curves = store.coins.values().reduce((s, c) => s + toEth(BigInt(c.ethReserve)) + (c.graduated ? toEth(BigInt(c.poolEth)) : 0), 0);
-  const protocol = store.coins.values().reduce((s, c) => s + c.feesEth / 2, 0);
+  const protocol = store.coins.values().reduce((s, c) => s + c.feesEth * 0.25, 0);
+  // the fee split adds up: 75% creator, 15% brain, 10% burn
+  for (const c of store.coins.values()) assert.ok(Math.abs(c.creatorEarnedEth + (c.brainEth ?? 0) + (c.burnEth ?? 0) - c.feesEth) < 1e-12);
   assert.ok(Math.abs(vaults + curves + protocol - startEth) < 1e-6, `conservation: ${vaults} + ${curves} + ${protocol} vs ${startEth}`);
   // limits respected
   for (const t of store.trades.values()) if (t.side === "buy" && t.agent) assert.ok(t.eth <= 0.04 + 1e-9, "trade over limit: " + t.eth);
@@ -73,7 +75,7 @@ test("parseJsonObject survives fences and chatter", () => {
   assert.deepEqual(parseJsonObject('sure!\n```json\n{"thought":"a {b}","actions":[]}\n```'), { thought: "a {b}", actions: [] });
 });
 
-test("sites: every coin gets a website from its agent, paid from its fees; content is sanitized", async () => {
+test("sites: every coin gets a website from its agent; rewrites are paid from its brain budget; content is sanitized", async () => {
   const { store, brain } = await world();
   for (let round = 0; round < 30 && store.sites.size === 0; round++) {
     for (const c of store.coins.values()) c.createdAt -= 60; // let launches age past the mock's 20 s wait
@@ -107,12 +109,13 @@ test("sites: every coin gets a website from its agent, paid from its fees; conte
   for (const c of store.coins.values()) {
     const site = store.sites.get(c.id);
     assert.ok(site, `$${c.symbol} has a website`);
-    assert.ok(site!.costEth > 0 && site!.spentEth >= site!.costEth);
+    assert.ok(site!.version > 1 || site!.costEth === 0, "the first version is on the platform");
   }
-  // a rewrite needs budget: drain it and the agent is refused
+  // a rewrite needs brain budget: drain it and the agent is refused
   const s0 = store.sites.get(coin.id)!;
   s0.updatedAt = 0;
-  s0.spentEth = coin.feesEth / 2;
+  const owner = store.agents.get(coin.agent)!;
+  owner.brainSpentEth = owner.brainEarnedEth ?? 0;
   await assert.rejects(() => brain.execute(store.agents.get(coin.agent)!, { type: "site", symbol: coin.symbol }, {} as any), /budget/);
   // someone else's coin
   const other = store.agents.values().find((x) => x.id !== coin.agent)!;
@@ -129,4 +132,47 @@ test("one coin per agent: an agent that launched can never launch again", async 
   assert.equal(brain.limits(a).canLaunch, false);
   assert.ok(a.coin, "agent knows its coin");
   await assert.rejects(() => brain.execute(a, { type: "launch", name: "Second Try", symbol: "SECOND", eth: 0.002 }, { taken: [] } as any), /exactly one/);
+});
+
+test("sponsored launch: an agent with no ETH still launches its one coin, without a first buy", async () => {
+  const { store, brain } = await world(2);
+  const a = store.agents.values()[0];
+  a.balanceWei = "0";
+  const lim = brain.limits(a);
+  assert.equal(lim.canLaunch, true);
+  assert.equal(lim.sponsoredLaunch, true);
+  await brain.execute(a, { type: "launch", name: "Free Fox", symbol: "FREEFX", about: "a free launch", thesis: "testing" }, { coins: [], feed: [], mentions: [], limits: lim, taken: [] } as any);
+  const coin = store.coins.values().find((c) => c.symbol === "FREEFX");
+  assert.ok(coin && coin.agent === a.id, "coin launched");
+  assert.equal(store.meta.sponsoredLaunches, 1);
+  assert.equal(brain.limits(a).canLaunch, false, "still only one coin");
+});
+
+test("self-funding brains: 15% of a coin's fees fills its agent's brain budget, which boosts and pays for thinking", async () => {
+  const { store, ledger, brain } = await world(6);
+  for (let round = 0; round < 12; round++) for (const a of store.agents.values()) await brain.wake(a);
+  const coin = store.coins.values().find((c) => c.feesEth > 0)!;
+  assert.ok(coin, "a coin with fees");
+  const owner = store.agents.get(coin.agent)!;
+  assert.ok(Math.abs((owner.brainEarnedEth ?? 0) - store.coins.values().filter((c) => c.agent === owner.id).reduce((s, c) => s + c.feesEth * 0.15, 0)) < 1e-12);
+  // charging: never below zero, refused when it can't cover
+  const left = ledger.brainLeft(owner);
+  assert.equal(ledger.chargeBrain(owner, left + 1), false);
+  assert.equal(ledger.brainLeft(owner), left);
+  assert.equal(ledger.chargeBrain(owner, left / 2), true);
+  assert.ok(Math.abs(ledger.brainLeft(owner) - left / 2) < 1e-15);
+  // a funded agent is boosted: it wakes again sooner
+  owner.brainEarnedEth = (owner.brainSpentEth ?? 0) + 1;
+  assert.equal(ledger.publicAgent(owner).boosted, true);
+  owner.nextActAt = 0;
+  await brain.wake(owner);
+  const boostedGap = owner.nextActAt - Math.floor(Date.now() / 1000);
+  owner.brainSpentEth = owner.brainEarnedEth;
+  owner.nextActAt = 0;
+  await brain.wake(owner);
+  const plainGap = owner.nextActAt - Math.floor(Date.now() / 1000);
+  const { config } = await import("../src/config.ts");
+  const I = config.brain.agentIntervalSeconds;
+  assert.ok(boostedGap <= Math.ceil(I * 1.4 * config.brain.boostFactor) + 1, `boosted ${boostedGap}s`);
+  assert.ok(plainGap >= Math.floor(I * 0.6) - 1, `plain ${plainGap}s`);
 });

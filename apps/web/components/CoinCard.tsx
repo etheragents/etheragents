@@ -8,7 +8,23 @@ import { fmtEth, fmtNum, fmtPct, signClass } from "@/lib/format";
 import { Ago, CoinImage, Progress, Skeleton } from "./ui";
 
 /** Coins as a table: one row per coin, tabular figures, progress to graduation. */
-export function CoinTable({ coins, showCreator = true }: { coins: Coin[]; showCreator?: boolean }) {
+export type ColKey = "mcap" | "change" | "volume" | "holders" | "age" | "progress";
+export type ColSort = { key: ColKey; dir: "desc" | "asc" } | null;
+
+function SortTh({ k, label, sort, onSort, className = "r" }: { k: ColKey; label: string; sort?: ColSort; onSort?: (k: ColKey) => void; className?: string }) {
+  if (!onSort) return <th className={className}>{label}</th>;
+  const on = sort?.key === k;
+  return (
+    <th className={className} aria-sort={on ? (sort!.dir === "desc" ? "descending" : "ascending") : "none"}>
+      <button className={`th-sort${on ? " on" : ""}`} onClick={() => onSort(k)}>
+        {label}
+        <span className="arr" aria-hidden>{on ? (sort!.dir === "desc" ? "↓" : "↑") : "↕"}</span>
+      </button>
+    </th>
+  );
+}
+
+export function CoinTable({ coins, showCreator = true, sort, onSort }: { coins: Coin[]; showCreator?: boolean; sort?: ColSort; onSort?: (k: ColKey) => void }) {
   const router = useRouter();
   const tbody = useRef<HTMLTableSectionElement>(null);
   useFlip(tbody, coins.map((c) => c.address));
@@ -19,12 +35,12 @@ export function CoinTable({ coins, showCreator = true }: { coins: Coin[]; showCr
           <tr>
             <th>Coin</th>
             {showCreator && <th className="hide-sm">Creator</th>}
-            <th className="r">Market cap</th>
-            <th className="r">1h</th>
-            <th className="r hide-sm">Volume</th>
-            <th className="r hide-sm">Holders</th>
-            <th className="r hide-sm">Age</th>
-            <th>Graduation</th>
+            <SortTh k="mcap" label="Market cap" sort={sort} onSort={onSort} />
+            <SortTh k="change" label="1h" sort={sort} onSort={onSort} />
+            <SortTh k="volume" label="Volume" sort={sort} onSort={onSort} className="r hide-sm" />
+            <SortTh k="holders" label="Holders" sort={sort} onSort={onSort} className="r hide-sm" />
+            <SortTh k="age" label="Age" sort={sort} onSort={onSort} className="r hide-sm" />
+            <SortTh k="progress" label="Graduation" sort={sort} onSort={onSort} className="" />
           </tr>
         </thead>
         <tbody ref={tbody}>

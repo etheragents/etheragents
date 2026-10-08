@@ -7,7 +7,9 @@
     "test": "node scripts/compile.mjs && node --test test/*.test.mjs",
     "chain": "hardhat node --hostname 127.0.0.1 --port 8545",
     "deploy": "node scripts/deploy.mjs",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "token-live": "node scripts/token-live.mjs",
+    "buyback": "node scripts/buyback.mjs"
   },
   "devDependencies": {
     "hardhat": "^2.26.0",

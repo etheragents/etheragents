@@ -7,6 +7,7 @@ import { SimMarket } from "./sim.ts";
 import { ChainMarket } from "./chain.ts";
 import { Brain } from "./brain.ts";
 import { startInfluence } from "./influence.ts";
+import { startKeeper } from "./keeper.ts";
 import { createServer, createAgentRec } from "./app.ts";
 import { HOUSE } from "./house.ts";
 import { toWei } from "./util.ts";
@@ -36,16 +37,26 @@ if (market instanceof SimMarket && store.agents.size === 0 && config.house.count
     });
     a.nextActAt = Math.floor(Date.now() / 1000) + 2 + i * 2;
     a.maxTradeEth = 0.06; // limits a careful owner might set on-chain
-    a.dailyLimitEth = 1.5;
+    a.dailyLimitEth = 0; // the simulation runs fast; a daily cap would freeze it for the rest of the day
     store.agents.set(a);
   }
   store.meta.nextAgentId = config.house.count + 1;
   store.bumpMeta();
   console.log(`[sim] seeded ${config.house.count} house agents`);
 }
+// simulation: keep house agents trading (older saved state had a 1.5 ETH daily cap that freezes them for the day)
+if (market instanceof SimMarket) {
+  for (const a of store.agents.values()) {
+    if (a.house && a.dailyLimitEth > 0) {
+      a.dailyLimitEth = 0;
+      store.agents.touch(a);
+    }
+  }
+}
 
 const brain = new Brain(ledger, market);
 brain.start();
+if (market instanceof ChainMarket) startKeeper(market, ledger);
 startInfluence(ledger);
 
 const server = createServer({ ledger, hub, market, brain });
