@@ -34,7 +34,7 @@ const models = () => [config.llm.model, ...config.llm.fallbackModels.filter((m) 
 let active = 0;
 let switchedAt = 0;
 export const currentModel = () => models()[active] ?? config.llm.model;
-const unavailable = (msg: string) => /reply \(empty, finish_reason|reasoning|max_tokens| 429:|rate.?limit|overloaded| 503:| 502:|model_not_available|No provider|not.*(found|available|supported).*model|model.*(not|isn't).*(found|available|exist)|invalid model|unknown model/i.test(msg);
+const unavailable = (msg: string) => /aborted|timed? ?out|reply \(empty, finish_reason|reasoning|max_tokens| 429:|rate.?limit|overloaded| 503:| 502:|model_not_available|No provider|not.*(found|available|supported).*model|model.*(not|isn't).*(found|available|exist)|invalid model|unknown model/i.test(msg);
 
 export async function complete(system: string, user: string, maxTokens = 900): Promise<LlmResult> {
   if (config.llm.provider === "mock") throw new Error("mock provider has no completion endpoint");

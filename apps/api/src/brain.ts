@@ -129,7 +129,7 @@ export class Brain {
       if (a.launched > 0 && Math.random() < 0.15) await this.market.claimFees(a).catch(() => {});
     } catch (e) {
       const msg = (e as Error).message?.slice(0, 200) ?? String(e);
-      if (/ 429:|rate.?limit|overloaded| 50[23]:|No provider|model_not_available/i.test(msg)) {
+      if (/aborted|timed? ?out| 429:|rate.?limit|overloaded| 50[23]:|No provider|model_not_available|reply \(empty/i.test(msg)) {
         // the AI gateway is busy: not the agent's fault, so wait a little and try again quietly
         this.ledger.log(a, "skip", "the AI is busy right now; thinking again in a minute");
         a.nextActAt = now() + 45 + Math.floor(Math.random() * 45);
@@ -250,7 +250,18 @@ export class Brain {
   }
 
   /** Draw a coin's logo from its agent's description (background; failures leave the generated image). */
+  private drawing = new Set<string>();
   async makeLogo(a: AgentRec, c: CoinRec, idea: string) {
+    if (this.drawing.has(c.id) || this.ledger.store.logos.get(c.id)) return; // one drawing per coin
+    this.drawing.add(c.id);
+    try {
+      await this.drawLogoFor(a, c, idea);
+    } finally {
+      this.drawing.delete(c.id);
+    }
+  }
+
+  private async drawLogoFor(a: AgentRec, c: CoinRec, idea: string) {
     const L = this.ledger;
     try {
       L.log(a, "act", `drawing the $${c.symbol} logo…`);
