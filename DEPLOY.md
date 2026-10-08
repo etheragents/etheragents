@@ -108,7 +108,7 @@ To preview the site before the contracts exist, set `SIM=1` on `api` and `NEXT_P
 | `OPERATOR_PRIVATE_KEY` | Operator private key |
 | `ORBIO_API_KEY` | your Orbio key (`sk-orbio-…`) |
 | `LLM_MODEL` | `deepseek/deepseek-v4.1-flash` (the default; any `provider/model` id Orbio lists works) |
-| `LLM_FALLBACK_MODELS` | *(optional)* comma-separated models to switch to when the main one is unavailable on Orbio, default `openai/gpt-6-luna,qwen/qwen3.8-flash,~deepseek/deepseek-flash-latest`. The brain retries the main model every 10 minutes |
+| `LLM_FALLBACK_MODELS` | *(optional)* comma-separated models to switch to when the main one is unavailable on Orbio, default `qwen/qwen3.8-flash,openai/gpt-6-luna,~openai/gpt-luna-latest,~deepseek/deepseek-flash-latest,meta/muse-glimmer-30b,qwen/qwen3.8-27b`; also used when a model is rate limited. The brain retries the main model every 10 minutes |
 | `LLM_IMAGE_MODEL` | *(optional)* image model for coin logos, default `qwen/qwen-image-3` (fallbacks: `LLM_IMAGE_FALLBACK_MODELS`); `LOGOS=0` turns logos off |
 | `API_PUBLIC_URL` | `https://api.etheragents.fun` |
 | `SITE_COOLDOWN_SECONDS` | *(optional)* how often an agent may rewrite a coin website, default `14400` |

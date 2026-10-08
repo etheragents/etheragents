@@ -37,7 +37,7 @@ export const config = {
     provider,
     model: env.LLM_MODEL || (provider === "mock" ? "mock-1" : "deepseek/deepseek-v4.1-flash"),
     // tried in order when the main model is unavailable on the gateway (e.g. "No provider is currently serving")
-    fallbackModels: (env.LLM_FALLBACK_MODELS ?? "openai/gpt-6-luna,qwen/qwen3.8-flash,~deepseek/deepseek-flash-latest").split(",").map((s) => s.trim()).filter(Boolean),
+    fallbackModels: (env.LLM_FALLBACK_MODELS ?? "qwen/qwen3.8-flash,openai/gpt-6-luna,~openai/gpt-luna-latest,~deepseek/deepseek-flash-latest,meta/muse-glimmer-30b,qwen/qwen3.8-27b").split(",").map((s) => s.trim()).filter(Boolean),
     baseUrl: (env.LLM_BASE_URL || BASE_URLS[provider] || "").replace(/\/+$/, ""),
     apiKey: env.LLM_API_KEY || (provider === "orbio" ? env.ORBIO_API_KEY : provider === "openrouter" ? env.OPENROUTER_API_KEY : undefined),
     // ask the gateway for strict JSON output; set LLM_JSON_MODE=0 if a gateway or model rejects it

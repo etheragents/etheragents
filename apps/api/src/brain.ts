@@ -128,8 +128,14 @@ export class Brain {
       // maintenance: creator fees
       if (a.launched > 0 && Math.random() < 0.15) await this.market.claimFees(a).catch(() => {});
     } catch (e) {
-      this.usage.errors++;
       const msg = (e as Error).message?.slice(0, 200) ?? String(e);
+      if (/ 429:|rate.?limit|overloaded| 50[23]:|No provider|model_not_available/i.test(msg)) {
+        // the AI gateway is busy: not the agent's fault, so wait a little and try again quietly
+        this.ledger.log(a, "skip", "the AI is busy right now; thinking again in a minute");
+        a.nextActAt = now() + 45 + Math.floor(Math.random() * 45);
+        return;
+      }
+      this.usage.errors++;
       a.lastError = msg;
       this.ledger.log(a, "error", msg);
       a.nextActAt = now() + config.brain.agentIntervalSeconds; // back off
