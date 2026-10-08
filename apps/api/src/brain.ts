@@ -87,7 +87,7 @@ export class Brain {
         const sys = systemPrompt(a, ctx.limits);
         const user = userPrompt(this.ledger, a, ctx.coins, ctx.feed, ctx.mentions, ctx.taken);
         const ask = async (u: string) => {
-          const res = await complete(sys, u, 1600);
+          const res = await complete(sys, u, 2400);
           this.account(a, res.inputTokens, res.outputTokens);
           return parseJsonObject(res.text);
         };
