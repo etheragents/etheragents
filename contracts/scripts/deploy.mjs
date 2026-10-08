@@ -24,7 +24,8 @@ if (!chain) throw new Error("NETWORK must be local, sepolia or mainnet");
 const LOCAL_DEPLOYER = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 const LOCAL_OPERATOR = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
 
-const pk = process.env.DEPLOYER_PRIVATE_KEY || (NETWORK === "local" ? LOCAL_DEPLOYER : null);
+const normKey = (k) => { if (!k) return k; const s = String(k).trim().replace(/^["']|["']$/g, "").replace(/\s+/g, ""); const h = s.startsWith("0x") ? s : "0x" + s; if (!/^0x[0-9a-fA-F]{64}$/.test(h)) throw new Error("private key must be 64 hex characters (0x optional); check the secret has no spaces or quotes"); return h; };
+const pk = normKey(process.env.DEPLOYER_PRIVATE_KEY) || (NETWORK === "local" ? LOCAL_DEPLOYER : null);
 if (!pk) throw new Error("DEPLOYER_PRIVATE_KEY is required");
 const account = privateKeyToAccount(pk);
 const rpc = process.env.RPC_URL || (NETWORK === "local" ? "http://127.0.0.1:8545" : null);

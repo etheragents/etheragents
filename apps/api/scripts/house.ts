@@ -7,12 +7,13 @@ import { privateKeyToAccount } from "viem/accounts";
 import { mainnet, sepolia, hardhat } from "viem/chains";
 import { agentFactoryAbi, deploymentFor, personaHash } from "@etheragents/shared";
 import { HOUSE } from "../src/house.ts";
+import { normKey } from "../src/config.ts";
 
 const chainId = Number(process.env.CHAIN_ID || 31337);
 const chain = ({ 1: mainnet, 11155111: sepolia, 31337: hardhat } as const)[chainId as 1] ?? hardhat;
 const rpc = process.env.RPC_URL || "http://127.0.0.1:8545";
 const api = (process.env.API_URL || "http://localhost:8787").replace(/\/$/, "");
-const key = process.env.HOUSE_OWNER_KEY as Hex;
+const key = normKey(process.env.HOUSE_OWNER_KEY) as Hex;
 if (!key) throw new Error("HOUSE_OWNER_KEY required");
 const d = deploymentFor(chainId);
 const factory = (process.env.FACTORY_ADDRESS || d?.factory) as Hex;

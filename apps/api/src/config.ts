@@ -14,13 +14,22 @@ const BASE_URLS: Record<string, string> = {
   openrouter: "https://openrouter.ai/api/v1",
 };
 
+/** Accept a private key with or without 0x, ignoring stray spaces, quotes and newlines. */
+export function normKey(k?: string): `0x${string}` | undefined {
+  if (!k) return undefined;
+  const s = k.trim().replace(/^["']|["']$/g, "").replace(/\s+/g, "");
+  const h = s.startsWith("0x") ? s : "0x" + s;
+  if (!/^0x[0-9a-fA-F]{64}$/.test(h)) throw new Error("OPERATOR_PRIVATE_KEY must be 64 hex characters (0x optional)");
+  return h as `0x${string}`;
+}
+
 export const config = {
   port: num(env.PORT, 8787),
   publicUrl: (env.API_PUBLIC_URL || `http://localhost:${num(env.PORT, 8787)}`).replace(/\/$/, ""),
   sim: env.SIM === "1" || env.SIM === "true",
   chainId: num(env.CHAIN_ID, env.SIM === "1" ? 31337 : 1),
   rpcUrls: (env.RPC_URL || "http://127.0.0.1:8545").split(",").map((s) => s.trim()).filter(Boolean),
-  operatorKey: env.OPERATOR_PRIVATE_KEY as `0x${string}` | undefined,
+  operatorKey: normKey(env.OPERATOR_PRIVATE_KEY),
   databaseUrl: env.DATABASE_URL,
   dataDir: env.DATA_DIR || ".data",
 
