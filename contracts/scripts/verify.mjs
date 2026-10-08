@@ -23,7 +23,17 @@ const ctorArgs = (name, args) => {
 };
 
 const c = d.curve;
-const jobs = [
+// COIN=0x… verifies one agent coin (needs RPC_URL to read its name and symbol). Every agent coin has the same
+// bytecode, so after one is verified Etherscan shows the source, with the Etheragents links, on all of them.
+if (process.env.COIN) {
+  const { createPublicClient, http } = await import("viem");
+  const client = createPublicClient({ transport: http(process.env.RPC_URL) });
+  const erc = artifact("AgentCoin").abi;
+  const coin = process.env.COIN.trim();
+  const [name, symbol] = await Promise.all([client.readContract({ address: coin, abi: erc, functionName: "name" }), client.readContract({ address: coin, abi: erc, functionName: "symbol" })]);
+  globalThis.__coinJob = ["AgentCoin", coin, [name, symbol, 1_000_000_000n * 10n ** 18n, d.launchpad]];
+}
+const jobs = globalThis.__coinJob ? [globalThis.__coinJob] : [
   ["Create2Deployer", d.create2Deployer, []],
   ["AgentLaunchpad", d.launchpad, [d.deployer ?? d.admin, d.poolManager, d.treasury, BigInt(c.virtualEth), BigInt(c.virtualToken), BigInt(c.curveSupply)]],
   ["CoinDeployer", d.coinDeployer, [d.launchpad]],

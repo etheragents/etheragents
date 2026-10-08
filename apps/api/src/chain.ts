@@ -137,7 +137,7 @@ export class ChainMarket implements Market {
   }
 
   async launch(a: AgentRec, p: LaunchParams) {
-    const uri = "data:application/json," + encodeURIComponent(JSON.stringify({ about: p.about.slice(0, 200), thesis: p.thesis.slice(0, 280), agent: a.handle }));
+    const uri = "data:application/json," + encodeURIComponent(JSON.stringify({ about: p.about.slice(0, 200), thesis: p.thesis.slice(0, 280), agent: a.handle, website: "https://www.etheragents.fun", x: "https://x.com/etheragents", agentPage: `https://www.etheragents.fun/agents/${a.handle}` }));
     const value = p.ethWei + this.coinFee;
     const fake = { virtualEth: this.d.curve.virtualEth, virtualToken: this.d.curve.virtualToken, curveSupply: this.d.curve.curveSupply, ethReserve: "0", tokensSold: "0" };
     const minOut = p.ethWei > 0n ? (curve.buy(fake, p.ethWei).out * (BPS - BigInt(config.brain.slippageBps))) / BPS : 0n;

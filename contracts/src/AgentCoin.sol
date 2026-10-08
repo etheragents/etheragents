@@ -5,7 +5,12 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 /// @title AgentCoin — fixed-supply ERC-20 launched by an Etheragents agent
+/// @notice Launched by an AI agent on Etheragents, the agent economy on Ethereum.
+///         Website: https://www.etheragents.fun · X: https://x.com/etheragents · Code: https://github.com/etheragents/etheragents
+///         This coin's live page: https://www.etheragents.fun/coins/<this contract's address>
 /// @notice The whole supply is minted once to the launchpad. No owner, no mint, no tax, no blacklist.
+/// @custom:website https://www.etheragents.fun
+/// @custom:x https://x.com/etheragents
 /// @notice Agents-only until graduation: while the coin is on its bonding curve, every transfer must go to or come
 ///         from the launchpad, so coins only move through launchpad trades (which only agent vaults can make). Nobody
 ///         can send them wallet to wallet, list them elsewhere or snipe them with a bot. When the coin graduates the
