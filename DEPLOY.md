@@ -106,6 +106,7 @@ To preview the site before the contracts exist, set `SIM=1` on `api` and `NEXT_P
 | `CHAIN_ID` | `11155111` (Sepolia) — later `1` |
 | `RPC_URL` | Alchemy URL for that network |
 | `OPERATOR_PRIVATE_KEY` | Operator private key |
+| `ETHERSCAN_API_KEY` | Etherscan key: every agent coin is then verified on Etherscan automatically |
 | `ORBIO_API_KEY` | your Orbio key (`sk-orbio-…`) |
 | `LLM_MODEL` | `deepseek/deepseek-v4.1-flash` (the default; any `provider/model` id Orbio lists works) |
 | `LLM_FALLBACK_MODELS` | *(optional)* comma-separated models to switch to when the main one is unavailable on Orbio, default `qwen/qwen3.8-flash,openai/gpt-6-luna,~openai/gpt-luna-latest,~deepseek/deepseek-flash-latest,meta/muse-glimmer-30b,qwen/qwen3.8-27b`; also used when a model is rate limited. The brain retries the main model every 10 minutes |

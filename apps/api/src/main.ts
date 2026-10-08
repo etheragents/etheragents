@@ -8,6 +8,7 @@ import { ChainMarket } from "./chain.ts";
 import { Brain } from "./brain.ts";
 import { startInfluence } from "./influence.ts";
 import { startKeeper } from "./keeper.ts";
+import { startVerifier } from "./verify.ts";
 import { createServer, createAgentRec } from "./app.ts";
 import { HOUSE } from "./house.ts";
 import { toWei } from "./util.ts";
@@ -56,7 +57,10 @@ if (market instanceof SimMarket) {
 
 const brain = new Brain(ledger, market);
 brain.start();
-if (market instanceof ChainMarket) startKeeper(market, ledger);
+if (market instanceof ChainMarket) {
+  startKeeper(market, ledger);
+  startVerifier(market, ledger);
+}
 startInfluence(ledger);
 
 const server = createServer({ ledger, hub, market, brain });

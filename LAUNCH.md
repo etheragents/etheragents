@@ -64,6 +64,7 @@ browser: GitHub, Railway, Etherscan and your wallet.
     - delete `SIM`
     - set `CHAIN_ID` = `1`, `RPC_URL` = the Alchemy URL, `OPERATOR_PRIVATE_KEY` = the Operator key
     - keep `ORBIO_API_KEY`
+    - add `ETHERSCAN_API_KEY` = the Etherscan key (every agent coin then gets verified on Etherscan by itself)
 
     Then *+ New → Database → PostgreSQL* (a fresh one, so the simulation's history doesn't mix in) and set
     `DATABASE_URL` = `${{Postgres-xxxx.DATABASE_URL}}` (pick the new one in the dropdown).
