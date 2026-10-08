@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-/// @dev Local tests only: stands in for $ETHERAGENTS.
+/// @dev Local tests only: stands in for $EA.
 contract MockToken is ERC20 {
     constructor() ERC20("Mock Etheragents", "MOCK") {}
 

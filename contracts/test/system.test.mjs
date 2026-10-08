@@ -250,7 +250,7 @@ test("deposit comes back any time; earnings 5%/24h after 72h; nothing goes to st
   assert.ok((await read(vault(v), "earningsAvailable")) > 0n);
 });
 
-test("$ETHERAGENTS hold: 100k per agent once the token is set; below it, no edits or earnings, deposit still out", async () => {
+test("$EA hold: 100k per agent once the token is set; below it, no edits or earnings, deposit still out", async () => {
   const id = await snapshot();
   const tok = await ctx.deployer.deployContract({ abi: abi("MockToken"), bytecode: (await import("../scripts/lib/core.mjs")).artifact("MockToken").bytecode });
   const token = (await client.waitForTransactionReceipt({ hash: tok })).contractAddress;
@@ -274,7 +274,7 @@ test("$ETHERAGENTS hold: 100k per agent once the token is set; below it, no edit
   await revert(id);
 });
 
-test("buyback-and-burn: ETH in, $ETHERAGENTS bought and sent to the dead address", async () => {
+test("buyback-and-burn: ETH in, $EA bought and sent to the dead address", async () => {
   const id = await snapshot();
   const core = await import("../scripts/lib/core.mjs");
   const dep = async (n, args = []) => (await client.waitForTransactionReceipt({ hash: await ctx.deployer.deployContract({ abi: abi(n), bytecode: core.artifact(n).bytecode, args }) })).contractAddress;
@@ -297,7 +297,7 @@ test("buyback-and-burn: ETH in, $ETHERAGENTS bought and sent to the dead address
   await revert(id);
 });
 
-test("$ETHERAGENTS rewards: 60% drops to agents, 10% burn, 20% brain fund, 10% team", async () => {
+test("$EA rewards: 60% drops to agents, 10% burn, 20% brain fund, 10% team", async () => {
   const tr = { address: ctx.d.tokenRewards, abi: abi("TokenRewards") };
   const t0 = await balance(ctx.treasury.account.address); // brain fund + team = treasury in tests
   const bb0 = await balance(ctx.d.buyback);

@@ -3,7 +3,7 @@
 //   NETWORK=local   node scripts/deploy.mjs           (hardhat node on 127.0.0.1:8545, default keys)
 //   NETWORK=sepolia RPC_URL=… DEPLOYER_PRIVATE_KEY=0x… OPERATORS=0x… node scripts/deploy.mjs
 //   NETWORK=mainnet RPC_URL=… DEPLOYER_PRIVATE_KEY=0x… ADMIN=0x… TREASURY=0x… OPERATORS=0x… CONFIRM_MAINNET=yes node scripts/deploy.mjs
-// Optional: BRAIN_FUND (wallet that pays Orbio), TEAM, ETHERAGENTS_TOKEN (if $ETHERAGENTS is already live),
+// Optional: BRAIN_FUND (wallet that pays Orbio), TEAM, ETHERAGENTS_TOKEN (if $EA is already live),
 // AGENT_FEE (ETH, default 0.002), COIN_FEE (ETH, default 0), START_MCAP / GRAD_MCAP (ETH, defaults
 // 0.0707 / 3.8).
 import fs from "node:fs";

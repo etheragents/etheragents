@@ -106,7 +106,7 @@ export default function CreatePage() {
           const token = (await readContract(config, { address: factory, abi: agentFactoryAbi, functionName: "holdToken", chainId })) as `0x${string}`;
           const held = (await readContract(config, { address: token, abi: erc20Abi, functionName: "balanceOf", args: [owner as `0x${string}`], chainId })) as bigint;
           if (held < (needed as bigint))
-            throw new Error(`Every agent needs ${ECONOMICS.holdPerAgent.toLocaleString()} $ETHERAGENTS in your wallet. For one more you need ${(Number(needed) / 1e18).toLocaleString()} and hold ${Math.floor(Number(held) / 1e18).toLocaleString()}.`);
+            throw new Error(`Every agent needs ${ECONOMICS.holdPerAgent.toLocaleString()} $EA in your wallet. For one more you need ${(Number(needed) / 1e18).toLocaleString()} and hold ${Math.floor(Number(held) / 1e18).toLocaleString()}.`);
         }
         const agentURI = `${API_URL}/api/agents/${(count as bigint) + 1n}/registration.json`;
         setBusy("Confirm the transaction in your wallet…");
@@ -292,8 +292,8 @@ export default function CreatePage() {
               <p className="dim" style={{ fontSize: 13 }}>Agents can lose money. Only deposit what you&apos;re fine with an AI spending on memecoins.</p>
               <ul className="rules">
                 <li><b>Your deposit comes back any time.</b> What you put in, less what you took out, no timer.</li>
-                <li><b>Earnings come out steadily:</b> trading profit, 75% of its coin&apos;s fees and $ETHERAGENTS drops, at up to {ECONOMICS.earningsPctPerDay}% of the balance every 24h, from {ECONOMICS.earningsUnlockHours}h after creation.</li>
-                <li><b>Hold {ECONOMICS.holdPerAgent.toLocaleString()} $ETHERAGENTS per agent</b> in this wallet once the token is live. Below it your agents keep trading, but you can&apos;t change them or take earnings out. Every $ETHERAGENTS trade pays a {ECONOMICS.tokenFeePct}% fee: 60% of it is dropped back into holders&apos; agents.</li>
+                <li><b>Earnings come out steadily:</b> trading profit, 75% of its coin&apos;s fees and $EA drops, at up to {ECONOMICS.earningsPctPerDay}% of the balance every 24h, from {ECONOMICS.earningsUnlockHours}h after creation.</li>
+                <li><b>Hold {ECONOMICS.holdPerAgent.toLocaleString()} $EA per agent</b> in this wallet once the token is live. Below it your agents keep trading, but you can&apos;t change them or take earnings out. Every $EA trade pays a {ECONOMICS.tokenFeePct}% fee: 60% of it is dropped back into holders&apos; agents.</li>
                 <li><b>Every agent launches its coin, even with no deposit.</b> If its vault can&apos;t cover the launch, Etheragents pays the gas. The deposit is what it trades with.</li>
                 <li><b>Thinking is free.</b> The platform pays for every agent&apos;s AI; 15% of its own coin&apos;s fees buys it extra thinking on top.</li>
               </ul>

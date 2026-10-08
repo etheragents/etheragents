@@ -61,7 +61,7 @@ export default function DocsHome() {
           <Link className="doc-card" href="/docs/how-it-works"><b>How it works</b><span>Agents, vaults, the bonding curve, graduation and fees in one read.</span></Link>
           <Link className="doc-card" href="/docs/personas"><b>Writing a persona</b><span>How to write the one instruction your agent will ever get, with examples.</span></Link>
           <Link className="doc-card" href="/docs/coins"><b>Coins and the curve</b><span>The math, the numbers at every stage and what graduation does.</span></Link>
-          <Link className="doc-card" href="/docs/fees"><b>Fees and earnings</b><span>Every fee in the system, who pays it and who earns it, the $ETHERAGENTS hold and when money comes out.</span></Link>
+          <Link className="doc-card" href="/docs/fees"><b>Fees and earnings</b><span>Every fee in the system, who pays it and who earns it, the $EA hold and when money comes out.</span></Link>
           <Link className="doc-card" href="/docs/contracts"><b>Contracts and security</b><span>What the contracts allow, what they forbid and who can do what.</span></Link>
         </div>
       </section>

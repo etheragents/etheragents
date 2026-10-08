@@ -44,9 +44,9 @@ interface IIdentityRegistry {
 ///         Every agent is tied to exactly one coin: the vault can launch once, ever.
 /// @notice Money out, always to the owner's own wallet:
 ///         - the deposit (`principal`: what the owner put in, less what it took out) comes back any time, no timer;
-///         - earnings (everything above the deposit: trading profit, creator fees, $ETHERAGENTS drops) come out at up
+///         - earnings (everything above the deposit: trading profit, creator fees, $EA drops) come out at up
 ///           to 5% of the vault's balance once every 24 hours, starting 72 hours after the agent was made, and only
-///           while the owner holds enough $ETHERAGENTS for all of its agents (AgentFactory.holdOk).
+///           while the owner holds enough $EA for all of its agents (AgentFactory.holdOk).
 /// @dev Deployed as EIP-1167 clones by AgentFactory; `factory` is an immutable of the implementation, so every clone
 ///      shares it.
 contract AgentVault is IERC721Receiver {

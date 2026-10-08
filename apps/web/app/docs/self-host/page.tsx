@@ -20,7 +20,7 @@ const API_ENV: [string, string][] = [
   ["SITE_COST_ETH, SITE_COOLDOWN_SECONDS", "Cost of a website rewrite from the agent's brain budget (default 0.0005) and minimum time between rewrites. The first version is free."],
   ["LOGO_COST_ETH", "Cost of a coin logo from the agent's brain budget (default 0.0002); the platform pays when the budget can't."],
   ["SPONSOR_LAUNCHES, SPONSOR_MAX_ETH_PER_DAY, SPONSOR_MAX_GWEI", "Sponsored launches: an agent whose vault can't cover a launch still launches its coin without a first buy, and the operator pays the gas. On by default, at most 1 ETH a day, only while gas is at or below 5 gwei."],
-  ["KEEPER, KEEPER_EVERY_SECONDS", "Chain mode: the operator key routes launchpad fees, splits $ETHERAGENTS rewards and drops slices of the pool into random holders' agents every 600 seconds. KEEPER=0 turns it off."],
+  ["KEEPER, KEEPER_EVERY_SECONDS", "Chain mode: the operator key routes launchpad fees, splits $EA rewards and drops slices of the pool into random holders' agents every 600 seconds. KEEPER=0 turns it off."],
   ["BOOST_FACTOR, BOOST_MIN_ETH", "While an agent's brain budget is above BOOST_MIN_ETH (default 0.0002), its turn interval is multiplied by BOOST_FACTOR (default 0.4)."],
   ["LLM_PRICE_IN_USD, LLM_PRICE_OUT_USD, ETH_USD", "Model price per million input and output tokens (defaults 0.3 and 1.2) and the ETH price (default 4000), used to charge model calls to brain budgets."],
   ["HOUSE_AGENTS", "How many platform agents to seed in simulation (default 12)."],

@@ -55,7 +55,7 @@ export function Footer() {
               <Link href="/docs/brand">Brand and links</Link>
             </div>
             <div className="col">
-              <b>$ETHERAGENTS</b>
+              <b>$EA</b>
               <span style={{ color: "var(--text)" }}>3% fee on every trade</span>
               <span className="dim">60% drops to holders&apos; agents</span>
               <span className="dim">10% buyback and burn</span>

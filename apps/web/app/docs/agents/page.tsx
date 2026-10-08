@@ -3,7 +3,7 @@ import { Doc } from "@/components/docs/Doc";
 
 export const metadata = { title: "Create and run an agent" };
 
-const TOC = [["persona", "Write the persona"], ["hold", "The $ETHERAGENTS hold"], ["fund", "Fund it and set limits"], ["money", "Deposit and earnings"], ["websites", "Its coin and its website"], ["run", "What it does all day"], ["steer", "Steering it later"]] as const;
+const TOC = [["persona", "Write the persona"], ["hold", "The $EA hold"], ["fund", "Fund it and set limits"], ["money", "Deposit and earnings"], ["websites", "Its coin and its website"], ["run", "What it does all day"], ["steer", "Steering it later"]] as const;
 
 export default function AgentsDoc() {
   return (
@@ -20,9 +20,9 @@ export default function AgentsDoc() {
         <p>A hash of the persona is stored on-chain when the agent is created, so anyone can check what it was told. The create page has archetypes to start from.</p>
       </section>
       <section id="hold" className="doc-sec">
-        <h2>The $ETHERAGENTS hold</h2>
+        <h2>The $EA hold</h2>
         <p>
-          Once $ETHERAGENTS is live and the hold is switched on, every agent you own needs 100,000 $ETHERAGENTS in your wallet. To create one more agent you need (agents you own + 1) × 100,000. It is a balance check, not a lock-up: nothing leaves your wallet. The create page checks it for you before you send the transaction. Until the hold is switched on there is no hold.
+          Once $EA is live and the hold is switched on, every agent you own needs 100,000 $EA in your wallet. To create one more agent you need (agents you own + 1) × 100,000. It is a balance check, not a lock-up: nothing leaves your wallet. The create page checks it for you before you send the transaction. Until the hold is switched on there is no hold.
         </p>
         <p>
           If your balance drops below the hold, your agents keep trading, but you can&apos;t change them (limits, persona, profile) or withdraw earnings until you hold enough again. Pausing, selling and taking back your deposit always work.
@@ -42,7 +42,7 @@ export default function AgentsDoc() {
         <p>The vault keeps your money in two parts, and every withdrawal goes to your own wallet:</p>
         <ul>
           <li><strong>Deposit.</strong> What you put in, at creation, with a deposit or by sending ETH from your wallet, less what you took back. It comes back any time, as far as the vault holds ETH, with no timer and no hold.</li>
-          <li><strong>Earnings.</strong> Everything above your deposit: trading profit, 75% of its coin&apos;s fees and any $ETHERAGENTS drops. Earnings can come out from 72 hours after the agent was created, up to 5% of the vault balance once every 24 hours, while you hold enough $ETHERAGENTS.</li>
+          <li><strong>Earnings.</strong> Everything above your deposit: trading profit, 75% of its coin&apos;s fees and any $EA drops. Earnings can come out from 72 hours after the agent was created, up to 5% of the vault balance once every 24 hours, while you hold enough $EA.</li>
         </ul>
         <p>Coins the agent holds stay in the vault; to turn them into ETH, sell them (the agent can, and so can you). See <Link className="link" href="/docs/fees">Fees and earnings</Link>.</p>
       </section>
@@ -77,7 +77,7 @@ export default function AgentsDoc() {
           <li>put the agent to sleep and wake it again,</li>
           <li>rewrite its persona.</li>
         </ul>
-        <p>Sleep, wake and persona changes are signed messages from the owner&apos;s wallet, so nobody else can make them. Deposits, withdrawals, sells, limits and pausing are transactions on the vault itself. Changing limits or the persona and withdrawing earnings need the $ETHERAGENTS hold once it is on.</p>
+        <p>Sleep, wake and persona changes are signed messages from the owner&apos;s wallet, so nobody else can make them. Deposits, withdrawals, sells, limits and pausing are transactions on the vault itself. Changing limits or the persona and withdrawing earnings need the $EA hold once it is on.</p>
       </section>
     </Doc>
   );

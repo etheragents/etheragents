@@ -82,7 +82,7 @@ export const config = {
     ethUsd: num(env.ETH_USD, 4000),
   },
 
-  // chain mode: the operator key also routes protocol fees and drops $ETHERAGENTS rewards (see keeper.ts)
+  // chain mode: the operator key also routes protocol fees and drops $EA rewards (see keeper.ts)
   keeper: {
     enabled: env.KEEPER !== "0",
     everySeconds: num(env.KEEPER_EVERY_SECONDS, 600),

@@ -22,8 +22,8 @@ Test the whole thing on **Sepolia** first; mainnet is the same steps with differ
 | **Admin** | Owns the four contracts (launchpad, factory, BuybackBurn, TokenRewards), receives creation fees (treasury). Use a hardware wallet or a Safe. | a little ETH for four `acceptOwnership` calls |
 | **Deployer** | Deploys the contracts once, then is no longer needed | mainnet ≈ 0.03 ETH (deploy uses ≈ 8–10M gas) |
 | **Operator** | The brain's hot key: signs every agent action. Its gas is refunded by the vaults. Also the keeper for buybacks and drops. | ≈ 0.02 ETH float |
-| **Brain fund** *(optional, can be the Admin)* | Receives 15% of every coin's fees and 20% of $ETHERAGENTS's rewards, and pays the Orbio bill for every agent's thinking | — |
-| **Team** *(optional, can be the Admin)* | Receives 10% of $ETHERAGENTS's rewards | — |
+| **Brain fund** *(optional, can be the Admin)* | Receives 15% of every coin's fees and 20% of $EA's rewards, and pays the Orbio bill for every agent's thinking | — |
+| **Team** *(optional, can be the Admin)* | Receives 10% of $EA's rewards | — |
 | **House owner** | Creates and funds the house agents | deposit × number of house agents + fees |
 
 Write down the **addresses** of all of them. Only the Deployer, Operator and House-owner **private keys** are ever
@@ -67,7 +67,7 @@ Repository → **Settings → Secrets and variables → Actions**.
 | `AGENT_FEE` | `0.002` (ETH charged per agent creation; max 0.1) |
 
 The deploy script also reads three optional settings: `BRAIN_FUND` (receives the brain share of fees; pays for
-inference), `TEAM` (receives the team share of $ETHERAGENTS rewards) and `ETHERAGENTS_TOKEN` (only if $ETHERAGENTS
+inference), `TEAM` (receives the team share of $EA rewards) and `ETHERAGENTS_TOKEN` (only if $EA
 is already live; switches on the hold and the buyback at deploy time). Unset, the brain fund and team default to
 `TREASURY`. Add them as repository variables with the same names; the *deploy-contracts* workflow passes them
 through. They can also be changed after deploy (`AgentLaunchpad.setBrainFund`, `TokenRewards.setAddresses`).
@@ -114,7 +114,7 @@ To preview the site before the contracts exist, set `SIM=1` on `api` and `NEXT_P
 | `SITE_COST_ETH` | *(optional)* what one website rewrite costs, charged to the agent's brain budget, default `0.0005` (the first version is free) |
 | `LOGO_COST_ETH` | *(optional)* what a coin logo costs from the agent's brain budget, default `0.0002` (the platform pays when the budget can't) |
 | `BOOST_FACTOR`, `BOOST_MIN_ETH` | *(optional)* while an agent's brain budget is above `BOOST_MIN_ETH` (default `0.0002`), its turn interval is multiplied by `BOOST_FACTOR` (default `0.4`) |
-| `KEEPER`, `KEEPER_EVERY_SECONDS` | *(optional)* chain mode: the operator key routes launchpad fees, splits $ETHERAGENTS rewards and drops them to holders' agents every 600 s. `KEEPER=0` turns it off. Fine-tune with `KEEPER_MIN_ROUTE_ETH` (0.01), `KEEPER_MIN_DROP_ETH` (0.002), `KEEPER_DROP_SLICE` (0.1), `KEEPER_DROPS_PER_ROUND` (6) |
+| `KEEPER`, `KEEPER_EVERY_SECONDS` | *(optional)* chain mode: the operator key routes launchpad fees, splits $EA rewards and drops them to holders' agents every 600 s. `KEEPER=0` turns it off. Fine-tune with `KEEPER_MIN_ROUTE_ETH` (0.01), `KEEPER_MIN_DROP_ETH` (0.002), `KEEPER_DROP_SLICE` (0.1), `KEEPER_DROPS_PER_ROUND` (6) |
 | `SPONSOR_LAUNCHES`, `SPONSOR_MAX_ETH_PER_DAY`, `SPONSOR_MAX_GWEI` | *(optional)* sponsored launches: an agent whose vault can't cover a launch still launches its coin (no first buy) and the Operator pays the gas. On by default, at most `1` ETH a day and only while gas is at or below `5` gwei; `SPONSOR_LAUNCHES=0` turns it off |
 | `LLM_PRICE_IN_USD`, `LLM_PRICE_OUT_USD`, `ETH_USD` | *(optional)* model price per 1M input / output tokens (defaults `0.3` / `1.2`) and the ETH price (default `4000`), used to charge model calls to brain budgets |
 | `MAX_LAUNCHES_PER_HOUR` | *(optional)* platform-wide launch cap; `0` (default) means no cap. Every agent launches exactly one coin either way |
@@ -174,7 +174,7 @@ Same as 4–6 with `mainnet`:
 
 Actions → **verify-contracts** → chain id `11155111` or `1`. After a minute each contract shows the green tick.
 
-## 10. When $ETHERAGENTS goes live
+## 10. When $EA goes live
 
 No redeploy is needed. Until these steps the hold is off, and the buyback share of fees simply accumulates in
 BuybackBurn (`AgentLaunchpad.claimProtocolFees()`, callable by anyone, moves it there along with the brain share).
@@ -190,11 +190,11 @@ BuybackBurn (`AgentLaunchpad.claimProtocolFees()`, callable by anyone, moves it 
    router (override with `ROUTER=`). The API notices the token within five minutes and the site starts showing it.
 3. Or by hand, admin wallet on etherscan.io:
    - `AgentFactory.setHold(token, 100000000000000000000000)` (100,000 tokens with 18 decimals, per agent). From now
-     on every owner needs 100,000 $ETHERAGENTS per agent to create agents, change them and withdraw earnings.
+     on every owner needs 100,000 $EA per agent to create agents, change them and withdraw earnings.
    - `BuybackBurn.setToken(token)` (once, cannot be changed).
    - `BuybackBurn.setRouter(router, true)` for the router the keeper will swap through, e.g. Uniswap's Universal
      Router. Swaps must name BuybackBurn as the recipient.
-4. $ETHERAGENTS has a 3% fee on every trade. Set **TokenRewards** as the recipient of that fee (the token's creator rewards) (or send them there by hand). The
+4. $EA has a 3% fee on every trade. Set **TokenRewards** as the recipient of that fee (the token's creator rewards) (or send them there by hand). The
    API's keeper (the operator key, `KEEPER=1` by default) routes launchpad fees, calls `split()` (60% drop pool,
    10% BuybackBurn, 20% brain fund, 10% team) and drops slices of the pool into random holders' agents every
    `KEEPER_EVERY_SECONDS` (600).
@@ -205,7 +205,7 @@ BuybackBurn (`AgentLaunchpad.claimProtocolFees()`, callable by anyone, moves it 
    ```
 
    It swaps through a Uniswap V2-style router (`swapExactETHForTokensSupportingFeeOnTransferTokens`) with 3%
-   slippage protection and burns everything bought. If $ETHERAGENTS trades on Uniswap v3/v4 instead, allow-list
+   slippage protection and burns everything bought. If $EA trades on Uniswap v3/v4 instead, allow-list
    the Universal Router and pass its calldata to `buyAndBurn` the same way.
 
 ---

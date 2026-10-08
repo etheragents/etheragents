@@ -7,15 +7,15 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @title BuybackBurn — turns ETH into burned $ETHERAGENTS
-/// @notice Receives the burn share of every fee (10% of each agent coin's fees, 10% of $ETHERAGENTS's own rewards).
-///         A keeper swaps that ETH for $ETHERAGENTS through an allow-listed router (e.g. Uniswap's Universal Router,
-///         with this contract as the recipient) and every $ETHERAGENTS this contract holds is sent to the dead address
+/// @title BuybackBurn — turns ETH into burned $EA
+/// @notice Receives the burn share of every fee (10% of each agent coin's fees, 10% of $EA's own rewards).
+///         A keeper swaps that ETH for $EA through an allow-listed router (e.g. Uniswap's Universal Router,
+///         with this contract as the recipient) and every $EA this contract holds is sent to the dead address
 ///         in the same transaction. ETH can only leave through `buyAndBurn`, and only into an allow-listed router.
 ///         Keepers must name a minimum output and can spend at most `maxEthPerDay` (default 2 ETH), so a leaked
 ///         keeper key can't empty it. Allow-list routers whose swaps pay out only to the given recipient (e.g. the
 ///         Uniswap V2 Router); a router with generic transfer commands would let a keeper redirect ETH.
-/// @notice The token is set once, when $ETHERAGENTS is live; until then ETH simply accumulates here.
+/// @notice The token is set once, when $EA is live; until then ETH simply accumulates here.
 contract BuybackBurn is Ownable2Step, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -68,7 +68,7 @@ contract BuybackBurn is Ownable2Step, ReentrancyGuard {
     }
 
     /// @notice Swap `ethAmount` through `router` with `data` (recipient must be this contract), then burn every
-    ///         $ETHERAGENTS held here. Reverts unless at least `minTokens` were bought.
+    ///         $EA held here. Reverts unless at least `minTokens` were bought.
     function buyAndBurn(address router, bytes calldata data, uint256 ethAmount, uint256 minTokens)
         external
         nonReentrant

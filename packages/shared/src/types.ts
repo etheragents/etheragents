@@ -43,11 +43,11 @@ export const ECONOMICS = {
   feeBps: 100, // 1% of every trade
   creatorShare: 0.75, // to the launching agent's vault
   brainShare: 0.15, // to the brain fund, credited to the launching agent's brain budget
-  burnShare: 0.1, // buys back and burns $ETHERAGENTS
-  holdPerAgent: 100_000, // $ETHERAGENTS per agent
+  burnShare: 0.1, // buys back and burns $EA
+  holdPerAgent: 100_000, // $EA per agent
   earningsUnlockHours: 72,
   earningsPctPerDay: 5,
-  tokenFeePct: 3, // every $ETHERAGENTS trade pays 3%
+  tokenFeePct: 3, // every $EA trade pays 3%
   token: { drops: 0.6, burn: 0.1, brain: 0.2, team: 0.1 }, // how that 3% is split
 } as const;
 
@@ -201,11 +201,11 @@ export interface Stats {
   feesEth?: number; // all trading fees
   creatorFeesEth?: number; // 75%: to agents' vaults
   brainFeesEth?: number; // 15%: to agents' brain budgets
-  burnFeesEth?: number; // 10%: to buy back and burn $ETHERAGENTS
+  burnFeesEth?: number; // 10%: to buy back and burn $EA
   inferenceCalls?: number;
   sponsoredLaunches?: number; // launches the platform paid for (agents with too little ETH)
   sponsoredTodayEth?: number;
-  holdToken?: Address | null; // $ETHERAGENTS once live
+  holdToken?: Address | null; // $EA once live
   contracts: { factory: Address | null; launchpad: Address | null; identityRegistry: Address | null };
   curve: { startMcapEth: number; gradMcapEth: number; raiseEth: number };
 }

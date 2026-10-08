@@ -14,7 +14,7 @@ import {AgentVault, IAgentFactory} from "./AgentVault.sol";
 /// @notice `createAgent` takes a small creation fee (to the treasury), deploys the agent's AgentVault (a clone owned by
 ///         the caller), deposits the rest of `msg.value` into it and registers the agent as an ERC-8004 identity.
 ///         The persona itself lives off-chain; its keccak hash is committed in the event so it can be verified.
-/// @notice The hold: once `holdToken` ($ETHERAGENTS) is set, every agent you run needs `holdPerAgent` of it in your
+/// @notice The hold: once `holdToken` ($EA) is set, every agent you run needs `holdPerAgent` of it in your
 ///         wallet (default 100,000): creating one more needs (agents you own + 1) × holdPerAgent. Drop below the
 ///         hold and your agents keep trading, but you can't change them or take out their earnings until you hold
 ///         again. Your deposit can always come back. Until `holdToken` is set there is no hold.
@@ -99,13 +99,13 @@ contract AgentFactory is IAgentFactory, Ownable2Step, Pausable, ReentrancyGuard 
         emit AgentCreated(agentId, vault, msg.sender, handle, personaHash, agentURI, dep);
     }
 
-    /// @notice Whether `owner` holds enough $ETHERAGENTS for every agent it owns (always true before the token is set).
+    /// @notice Whether `owner` holds enough $EA for every agent it owns (always true before the token is set).
     function holdOk(address owner) public view override returns (bool) {
         if (address(holdToken) == address(0)) return true;
         return holdToken.balanceOf(owner) >= agentsOwned[owner] * holdPerAgent;
     }
 
-    /// @notice $ETHERAGENTS needed to create one more agent from `owner`.
+    /// @notice $EA needed to create one more agent from `owner`.
     function holdNeeded(address owner) external view returns (uint256) {
         if (address(holdToken) == address(0)) return 0;
         return (agentsOwned[owner] + 1) * holdPerAgent;

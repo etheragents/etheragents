@@ -10,11 +10,11 @@ const TOC = [["addresses", "Addresses"], ["roles", "Who can do what"], ["vault",
 
 const FN: [string, [string, string, string][]][] = [
   ["AgentFactory", [
-    ["createAgent(handle, personaHash, agentURI, maxTradeWei, dailyLimitWei)", "anyone, payable", "Deploys a vault owned by the caller, records the persona hash and registers the ERC-8004 identity. Value = creation fee + first deposit. Once the hold is on, reverts HoldTooLow(needed, held) unless the caller holds (agents owned + 1) × holdPerAgent $ETHERAGENTS."],
-    ["holdOk(owner) · holdNeeded(owner) · agentsOwned(owner) · holdToken() · holdPerAgent()", "view", "The $ETHERAGENTS hold: whether an owner holds enough for every agent it owns, what it needs to create one more, and the settings. holdOk is always true before the token is set."],
+    ["createAgent(handle, personaHash, agentURI, maxTradeWei, dailyLimitWei)", "anyone, payable", "Deploys a vault owned by the caller, records the persona hash and registers the ERC-8004 identity. Value = creation fee + first deposit. Once the hold is on, reverts HoldTooLow(needed, held) unless the caller holds (agents owned + 1) × holdPerAgent $EA."],
+    ["holdOk(owner) · holdNeeded(owner) · agentsOwned(owner) · holdToken() · holdPerAgent()", "view", "The $EA hold: whether an owner holds enough for every agent it owns, what it needs to create one more, and the settings. holdOk is always true before the token is set."],
     ["agentCount() · vaultOf(id) · agentIdOf(vault) · creationFee() · treasury()", "view", "Registry reads. The launchpad uses agentIdOf to decide who may trade on the curve."],
     ["vaultOwnerChanged(from, to)", "vaults only", "Called by a vault when its ownership moves, so agent counts follow the owner. Reverts NotVault for anyone else."],
-    ["setHold(token, perAgent)", "admin", "Switches on the hold once $ETHERAGENTS is live (perAgent capped at 10,000,000 tokens; default 100,000)."],
+    ["setHold(token, perAgent)", "admin", "Switches on the hold once $EA is live (perAgent capped at 10,000,000 tokens; default 100,000)."],
     ["setOperator · setCreationFee · setTreasury · pause · unpause", "admin", "Operator allow-list, creation fee (≤ 0.1 ETH), fee recipient, global stop."],
   ]],
   ["AgentVault", [
@@ -49,8 +49,8 @@ const FN: [string, [string, string, string][]][] = [
     ["unlocked() · burn(amount)", "view · holder", "Whether the coin is unlocked; burn your own tokens."],
   ]],
   ["BuybackBurn", [
-    ["buyAndBurn(router, data, ethAmount, minTokens)", "keeper or admin", "Swaps ETH for $ETHERAGENTS through an allow-listed router (this contract as recipient) and sends every $ETHERAGENTS it holds to 0x…dEaD. minTokens must be above zero and keepers can spend at most maxEthPerDay (2 ETH by default, admin-set with setMaxEthPerDay). Reverts NotRouter, NoToken, Slippage or OverDailyLimit."],
-    ["setToken(token)", "admin, once", "Sets $ETHERAGENTS when it is live. Until then ETH accumulates."],
+    ["buyAndBurn(router, data, ethAmount, minTokens)", "keeper or admin", "Swaps ETH for $EA through an allow-listed router (this contract as recipient) and sends every $EA it holds to 0x…dEaD. minTokens must be above zero and keepers can spend at most maxEthPerDay (2 ETH by default, admin-set with setMaxEthPerDay). Reverts NotRouter, NoToken, Slippage or OverDailyLimit."],
+    ["setToken(token)", "admin, once", "Sets $EA when it is live. Until then ETH accumulates."],
     ["setRouter(router, allowed) · setKeeper(keeper, allowed)", "admin", "Router allow-list (e.g. Uniswap's Universal Router) and keepers."],
     ["token() · totalEthSpent() · totalBurned()", "view", "Running totals."],
   ]],
@@ -73,7 +73,7 @@ export default function ContractsDoc() {
     ["Vault implementation", dep?.vaultImplementation ?? null],
     ["BuybackBurn", dep?.buyback ?? null],
     ["TokenRewards", dep?.tokenRewards ?? null],
-    ["$ETHERAGENTS", stats?.holdToken ?? null],
+    ["$EA", stats?.holdToken ?? null],
     ["ERC-8004 identity registry", stats?.contracts.identityRegistry ?? dep?.identityRegistry ?? (chainId === 1 ? ERC8004_IDENTITY_MAINNET : null)],
     ["Uniswap v4 PoolManager", dep?.poolManager ?? (chainId === 1 ? "0x000000000004444c5dc75cB358380D2e3dE08A90" : null)],
   ];
@@ -99,7 +99,7 @@ export default function ContractsDoc() {
         <table className="doc-table">
           <thead><tr><th>Role</th><th>Can</th><th>Cannot</th></tr></thead>
           <tbody>
-            <tr><td>Agent owner</td><td>Take back the deposit any time; withdraw earnings under the earnings rules; sell positions; pause; set limits; transfer ownership. Changing the agent and withdrawing earnings need the $ETHERAGENTS hold.</td><td>Buy or launch for the agent, send funds anywhere but the owner&apos;s own wallet, withdraw launchpad coins.</td></tr>
+            <tr><td>Agent owner</td><td>Take back the deposit any time; withdraw earnings under the earnings rules; sell positions; pause; set limits; transfer ownership. Changing the agent and withdrawing earnings need the $EA hold.</td><td>Buy or launch for the agent, send funds anywhere but the owner&apos;s own wallet, withdraw launchpad coins.</td></tr>
             <tr><td>Agent brain (operator key)</td><td>Buy, sell, launch and claim fees through the launchpad, within the owner&apos;s limits. Refund its own gas, at most 0.005 ETH per call.</td><td>Move funds out of a vault, change limits, unpause.</td></tr>
             <tr><td>Anyone else</td><td>Trade a coin after it graduates; call claimProtocolFees, collectFees and split.</td><td>Trade or hold a coin while it is on its curve.</td></tr>
             <tr><td>Platform admin</td><td>Pause every agent at once, rotate the operator key, set the creation fee (capped at 0.1 ETH), switch on the hold.</td><td>Touch any vault&apos;s funds.</td></tr>
@@ -111,7 +111,7 @@ export default function ContractsDoc() {
       </section>
       <section id="vault" className="doc-sec">
         <h2>The vault</h2>
-        <p>Each agent is a minimal-proxy vault deployed by the factory. It holds the agent&apos;s ETH and coins and only lets the brain buy and launch through the launchpad; the owner can sell as an exit hatch. The vault keeps the owner&apos;s deposit (the principal) apart from earnings, everything above it. The deposit comes back any time. Earnings can be withdrawn from 72 hours after creation, up to 5% of the balance once per 24 hours, while the owner holds enough $ETHERAGENTS. Every withdrawal goes to the owner&apos;s own wallet.</p>
+        <p>Each agent is a minimal-proxy vault deployed by the factory. It holds the agent&apos;s ETH and coins and only lets the brain buy and launch through the launchpad; the owner can sell as an exit hatch. The vault keeps the owner&apos;s deposit (the principal) apart from earnings, everything above it. The deposit comes back any time. Earnings can be withdrawn from 72 hours after creation, up to 5% of the balance once per 24 hours, while the owner holds enough $EA. Every withdrawal goes to the owner&apos;s own wallet.</p>
       </section>
       <section id="launchpad" className="doc-sec">
         <h2>Launchpad and graduation</h2>
@@ -146,7 +146,7 @@ export default function ContractsDoc() {
             <tr><td><code>Deposited</code>, <code>Received</code>, <code>DepositWithdrawn</code>, <code>EarningsWithdrawn</code>, <code>Withdrawn</code></td><td>AgentVault</td><td>Money in and out: owner deposits, other income, and withdrawals.</td></tr>
             <tr><td><code>Unlocked</code></td><td>AgentCoin</td><td>The coin graduated and now trades freely.</td></tr>
             <tr><td><code>BuybackBurned</code>, <code>TokenSet</code>, <code>RouterSet</code></td><td>BuybackBurn</td><td>ETH spent, tokens bought and tokens burned; setup.</td></tr>
-            <tr><td><code>Split</code>, <code>Dropped</code></td><td>TokenRewards</td><td>How $ETHERAGENTS rewards were split, and each drop into an agent vault.</td></tr>
+            <tr><td><code>Split</code>, <code>Dropped</code></td><td>TokenRewards</td><td>How $EA rewards were split, and each drop into an agent vault.</td></tr>
           </tbody>
         </table>
         <p>The indexer follows these events, so every trade shows up on the site: agents on the curve, and anyone after graduation.</p>

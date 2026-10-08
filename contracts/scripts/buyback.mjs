@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Buy back and burn $ETHERAGENTS with the ETH waiting in BuybackBurn, through a Uniswap V2-style router
+// Buy back and burn $EA with the ETH waiting in BuybackBurn, through a Uniswap V2-style router
 // (swapExactETHForTokensSupportingFeeOnTransferTokens). Run by a keeper (an operator key) or the admin.
 //   NETWORK=mainnet RPC_URL=… KEEPER_PRIVATE_KEY=0x… node scripts/buyback.mjs [ethAmount]
 // Optional: ROUTER (default Uniswap V2 Router02 on mainnet), WETH, SLIPPAGE_BPS (default 300).
@@ -41,4 +41,4 @@ const minOut = (quote * (10000n - slip)) / 10000n;
 const data = encodeFunctionData({ abi: routerAbi, functionName: "swapExactETHForTokensSupportingFeeOnTransferTokens", args: [minOut, [WETH, token], d.buyback, BigInt(Math.floor(Date.now() / 1000) + 600)] });
 const hash = await wallet.writeContract({ ...bb, functionName: "buyAndBurn", args: [ROUTER, data, eth, minOut] });
 const r = await client.waitForTransactionReceipt({ hash });
-console.log(r.status === "success" ? `bought and burned ~${quote} $ETHERAGENTS wei with ${formatEther(eth)} ETH: ${hash}` : "reverted");
+console.log(r.status === "success" ? `bought and burned ~${quote} $EA wei with ${formatEther(eth)} ETH: ${hash}` : "reverted");

@@ -26,7 +26,7 @@ Binding contract between `contracts/`, `apps/api` and `apps/web`. Types live in 
 | `GET /api/img/coin/:address.svg` | generated coin image (until the coin has a logo) |
 | `GET /api/img/logo/:address.webp` | the coin's logo, drawn by an image model (512 px WebP); `coin.image` points here once it exists |
 | `POST /api/agents` | create — see below → `{ agent }` |
-| `POST /api/agents/:id/control` | `{ action: "sleep"\|"wake"\|"persona", persona?, nonce, signature }` signed by the owner over `controlMessage(id, action, nonce)` (persona edits: action string is `persona:<keccak(persona)>`) → `{ agent }`; in chain mode a `persona` change returns 403 while the owner is below the $ETHERAGENTS hold (`AgentFactory.holdOk`) |
+| `POST /api/agents/:id/control` | `{ action: "sleep"\|"wake"\|"persona", persona?, nonce, signature }` signed by the owner over `controlMessage(id, action, nonce)` (persona edits: action string is `persona:<keccak(persona)>`) → `{ agent }`; in chain mode a `persona` change returns 403 while the owner is below the $EA hold (`AgentFactory.holdOk`) |
 | `POST /api/sim/fund` | SIM mode only: `{ owner, agentId, eth }` deposit / `{…, eth: -x}` withdraw → `{ agent }` |
 
 ### Creating an agent
@@ -41,7 +41,7 @@ Binding contract between `contracts/`, `apps/api` and `apps/web`. Types live in 
 * `AgentLaunchpad`: `create`, `buy`, `sell`, `collectFees`, `claimCreatorFees`, `claimProtocolFees`, views `price`, `marketCap`, `progressBps`, `quoteBuy`, `quoteSell`, `coins(addr)`, `creatorEthOwed(vault)`, `protocolEthOwed`, `brainEthOwed`, `burnEthOwed`; events `CoinCreated`, `Trade`, `Graduated`, `FeesCollected`, `CreatorClaimed`, `ProtocolClaimed`, `FeesRouted(toTreasury, toBrainFund, toBuyback)`. Agents-only before graduation: `create`, and `buy`/`sell` on a coin still on its curve, revert `AgentsOnly` unless `msg.sender` is a registered vault (`setAgentRegistry(factory)`) and `recipient == msg.sender`. Fee split (1% of the ETH side; ETH side of the 1% pool fee after graduation): 75% `creatorEthOwed`, 15% `brainEthOwed`, 10% `burnEthOwed`. `claimProtocolFees()` (anyone): creation fees → treasury, brain share → `brainFund` (treasury if unset), burn share → `buyback` (kept until set). Admin `setBrainFund`, `setBuyback`, `setAgentRegistry`.
 * `AgentCoin`: transfers revert `TransfersLocked` unless to/from the launchpad until `unlock()` (launchpad only, called at graduation, permanent, event `Unlocked`).
 * `BuybackBurn`: receives ETH; `setToken(token)` once (owner); `setRouter(router, allowed)`, `setKeeper(keeper, allowed)`; `buyAndBurn(router, data, ethAmount, minTokens)` (keeper or owner, allow-listed router, recipient must be this contract) sends every token held to `0x…dEaD`; event `BuybackBurned(router, ethIn, tokensBought, tokensBurned)`.
-* `TokenRewards`: receives $ETHERAGENTS's 3% trading fee; `split()` (anyone): 60% `dropPool`, 10% buyback, 20% brain fund, 10% team; `drop(vaults[], amounts[])` (keeper or owner, registered vaults only); events `Split`, `Dropped`.
+* `TokenRewards`: receives $EA's 3% trading fee; `split()` (anyone): 60% `dropPool`, 10% buyback, 20% brain fund, 10% team; `drop(vaults[], amounts[])` (keeper or owner, registered vaults only); events `Split`, `Dropped`.
 
 Short coin links: `/c/SYMBOL` redirects to `/coins/<address>`; coin, agent and coin-website pages have generated share images (`opengraph-image`).
 

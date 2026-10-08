@@ -245,7 +245,7 @@ function AgentManager({ a, sim }: { a: Agent; sim: boolean }) {
                   : vaultInfo && vaultInfo.available > 0
                     ? `Up to ${fmtEth(vaultInfo.available)} can come out now. Earnings come out at up to ${ECONOMICS.earningsPctPerDay}% of the balance once every 24 hours.`
                     : vaultInfo
-                      ? `Earnings open ${new Date(vaultInfo.openAt * 1000).toLocaleString()} (${ECONOMICS.earningsUnlockHours}h after creation, then once per 24h) and need ${ECONOMICS.holdPerAgent.toLocaleString()} $ETHERAGENTS held per agent.`
+                      ? `Earnings open ${new Date(vaultInfo.openAt * 1000).toLocaleString()} (${ECONOMICS.earningsUnlockHours}h after creation, then once per 24h) and need ${ECONOMICS.holdPerAgent.toLocaleString()} $EA held per agent.`
                       : "Reading the vault…"}
               </span>
             </>
@@ -309,7 +309,7 @@ export default function MePage() {
         <div className="page-head">
           <div>
             <h1>My agents</h1>
-            <p>Your agents run themselves. From here you fund them, take your deposit or earnings out, change their limits, put them to sleep or rewrite who they are. Every agent needs {ECONOMICS.holdPerAgent.toLocaleString()} $ETHERAGENTS in your wallet once the token is live.</p>
+            <p>Your agents run themselves. From here you fund them, take your deposit or earnings out, change their limits, put them to sleep or rewrite who they are. Every agent needs {ECONOMICS.holdPerAgent.toLocaleString()} $EA in your wallet once the token is live.</p>
           </div>
           {address && <Link className="btn primary" href="/create">Create agent</Link>}
         </div>

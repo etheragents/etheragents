@@ -1,9 +1,9 @@
-// Keeper (chain mode, operator key): routes fees and drops $ETHERAGENTS rewards to holders' agents.
+// Keeper (chain mode, operator key): routes fees and drops $EA rewards to holders' agents.
 //  - every ~10 min: launchpad.claimProtocolFees() when the brain/burn/treasury shares are worth the gas
-//  - every ~10 min: TokenRewards.split() when new $ETHERAGENTS rewards arrived
+//  - every ~10 min: TokenRewards.split() when new $EA rewards arrived
 //  - every ~10 min: drop a small slice of the drop pool into a few random agents whose owners hold enough
-//    $ETHERAGENTS (AgentFactory.holdOk), so rewards spread wide in small cuts
-// Buybacks (BuybackBurn.buyAndBurn) need router calldata for wherever $ETHERAGENTS trades; run
+//    $EA (AgentFactory.holdOk), so rewards spread wide in small cuts
+// Buybacks (BuybackBurn.buyAndBurn) need router calldata for wherever $EA trades; run
 // contracts/scripts/buyback.mjs for those.
 import { agentFactoryAbi, agentLaunchpadAbi, tokenRewardsAbi } from "@etheragents/shared";
 import type { Hex } from "viem";
@@ -16,7 +16,7 @@ export function startKeeper(market: ChainMarket, ledger: Ledger) {
   const k = config.keeper;
   if (!k.enabled || !market.wallet) return;
   const tr = market.d.tokenRewards as Hex | undefined;
-  console.log(`[keeper] on: fee routing every ${k.everySeconds}s${tr ? `, $ETHERAGENTS drops from ${tr}` : ""}`);
+  console.log(`[keeper] on: fee routing every ${k.everySeconds}s${tr ? `, $EA drops from ${tr}` : ""}`);
   const send = async (address: Hex, abi: any, functionName: string, args: unknown[] = []) => {
     const hash = await market.wallet!.writeContract({ address, abi, functionName, args, chain: market.client.chain, account: market.wallet!.account! });
     const r = await market.client.waitForTransactionReceipt({ hash });
@@ -34,11 +34,11 @@ export function startKeeper(market: ChainMarket, ledger: Ledger) {
       console.log(`[keeper] routed ${fmtEth(toEth(owed))} ETH of protocol fees`);
     }
     if (!tr) return;
-    // 2) split new $ETHERAGENTS rewards 60/10/20/10
+    // 2) split new $EA rewards 60/10/20/10
     const unsplit = (await read(tr, tokenRewardsAbi, "unsplit")) as bigint;
     if (toEth(unsplit) >= k.minRouteEth) {
       await send(tr, tokenRewardsAbi, "split");
-      console.log(`[keeper] split ${fmtEth(toEth(unsplit))} ETH of $ETHERAGENTS rewards`);
+      console.log(`[keeper] split ${fmtEth(toEth(unsplit))} ETH of $EA rewards`);
     }
     // 3) drops: a slice of the pool, in small random cuts, to agents whose owners hold
     const pool = (await read(tr, tokenRewardsAbi, "dropPool")) as bigint;
@@ -59,7 +59,7 @@ export function startKeeper(market: ChainMarket, ledger: Ledger) {
     await send(tr, tokenRewardsAbi, "drop", [vaults, amounts]);
     holders.forEach((a, i) => {
       const eth = toEth(amounts[i]);
-      ledger.activity("drop", `@${a.handle} got a ${fmtEth(eth)} ETH drop from $ETHERAGENTS rewards`, { agent: a, eth });
+      ledger.activity("drop", `@${a.handle} got a ${fmtEth(eth)} ETH drop from $EA rewards`, { agent: a, eth });
     });
     console.log(`[keeper] dropped ${fmtEth(toEth(slice))} ETH to ${holders.length} agents`);
   };

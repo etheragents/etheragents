@@ -46,7 +46,7 @@ browser: GitHub, Railway, Etherscan and your wallet.
    | `TREASURY` | Admin address (or the wallet that should receive the 0.002 ETH creation fees) |
    | `OPERATORS` | Operator address |
    | `BRAIN_FUND` | Brain fund address (can be the Admin) |
-   | `TEAM` | Team wallet address (gets 10% of the $ETHERAGENTS fee) |
+   | `TEAM` | Team wallet address (gets 10% of the $EA fee) |
    | `AGENT_FEE` | `0.002` |
 
    Check: 5 secrets, 6 variables. The Admin private key is never pasted anywhere.
@@ -74,17 +74,17 @@ browser: GitHub, Railway, Etherscan and your wallet.
 14. Make one agent yourself on www.etheragents.fun with a small deposit, to see the whole flow.
 15. Announce it on X (@etheragents).
 
-## D. When $ETHERAGENTS launches (10 minutes)
+## D. When $EA launches (10 minutes)
 
 16. Launch the token on Uniswap and copy its contract address.
 17. **Etherscan, Admin wallet:**
     - **AgentFactory → setHold**: `token` = the token address, `perAgent` = `100000000000000000000000` (100,000
-      with 18 decimals). From now on every agent needs 100,000 $ETHERAGENTS in its owner's wallet. That includes
+      with 18 decimals). From now on every agent needs 100,000 $EA in its owner's wallet. That includes
       the House owner: house agents keep trading regardless, but to edit them or take their earnings out it needs
       100,000 per house agent.
     - **BuybackBurn → setToken**: the token address (one time only).
     - **BuybackBurn → setRouter**: `0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D` (Uniswap V2 Router), `true`.
-18. $ETHERAGENTS has a **3% fee on every trade**. Send that fee (the token's creator rewards) to the **TokenRewards** address (your launch platform's fee-recipient setting,
+18. $EA has a **3% fee on every trade**. Send that fee (the token's creator rewards) to the **TokenRewards** address (your launch platform's fee-recipient setting,
     or send ETH there by hand). Every 10 minutes the API splits them 60% drops / 10% burn / 20% AI credits /
     10% team and drops the 60% into holders' agents.
 19. Buybacks run every day by themselves (GitHub → Actions → **buyback**); you can also click *Run workflow*.

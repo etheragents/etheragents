@@ -41,7 +41,7 @@ export class ChainMarket implements Market {
   coinFeeEth() {
     return toEth(this.coinFee);
   }
-  holdToken: Hex | null = null; // $ETHERAGENTS once AgentFactory.setHold is called (re-read every few minutes)
+  holdToken: Hex | null = null; // $EA once AgentFactory.setHold is called (re-read every few minutes)
   private holdReadAt = 0;
   private queue: Promise<unknown> = Promise.resolve();
   private syncing: Promise<void> | null = null;
@@ -64,7 +64,7 @@ export class ChainMarket implements Market {
     if (!this.wallet) console.warn("[chain] OPERATOR_PRIVATE_KEY not set — indexing only, agents cannot act");
   }
 
-  /** $ETHERAGENTS hold check for an owner (true before the token is set). */
+  /** $EA hold check for an owner (true before the token is set). */
   async holdOk(owner: string): Promise<boolean> {
     return (await this.client.readContract({ address: this.d.factory, abi: agentFactoryAbi, functionName: "holdOk", args: [owner as Hex] })) as boolean;
   }

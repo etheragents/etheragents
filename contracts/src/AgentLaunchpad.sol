@@ -54,7 +54,7 @@ interface IAgentRegistry {
 ///         through this contract. Graduation unlocks the coin for everyone.
 /// @notice Fees: 1% of the ETH side of every trade, split 75% to the coin's creator (its agent vault), 15% to the
 ///         brain fund (pays for the agents' thinking: the creator agent's own inference budget) and 10% to buy back
-///         and burn $ETHERAGENTS. After graduation the pool's own 1% LP fee accrues to this contract's position;
+///         and burn $EA. After graduation the pool's own 1% LP fee accrues to this contract's position;
 ///         `collectFees(coin)` (anyone) splits the ETH side the same way and burns the coin side.
 /// @notice Curve parameters are owner-set and apply to coins created afterwards. Defaults: start market cap
 ///         0.0707 ETH → graduation market cap 3.8 ETH (×53.8), ~88% of supply sold on the curve.
@@ -70,7 +70,7 @@ contract AgentLaunchpad is Ownable2Step, Pausable, ReentrancyGuard, IUnlockCallb
     uint256 public constant FEE_BPS = 100; // 1% of the ETH side
     uint256 public constant CREATOR_SHARE_BPS = 7_500; // of the fee: the launching agent's vault
     uint256 public constant BRAIN_SHARE_BPS = 1_500; // of the fee: the brain fund (agents' inference)
-    // the remaining 1_000 bps of the fee buy back and burn $ETHERAGENTS
+    // the remaining 1_000 bps of the fee buy back and burn $EA
     uint24 public constant POOL_FEE = 10_000; // 1% LP fee on graduated pools
     int24 public constant TICK_SPACING = 200;
     uint256 public constant MAX_CREATION_FEE = 0.05 ether;

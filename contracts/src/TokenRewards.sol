@@ -9,10 +9,10 @@ interface IVaultRegistry {
     function agentIdOf(address vault) external view returns (uint256);
 }
 
-/// @title TokenRewards — where $ETHERAGENTS's own trading rewards go
-/// @notice The creator rewards of $ETHERAGENTS are paid here and split by `split()` (anyone may call):
+/// @title TokenRewards — where $EA's own trading rewards go
+/// @notice The creator rewards of $EA are paid here and split by `split()` (anyone may call):
 ///         60% to the drop pool: dropped back to holders' agents at random, in small cuts, so it spreads wide;
-///         10% to BuybackBurn: buys $ETHERAGENTS back and burns it;
+///         10% to BuybackBurn: buys $EA back and burns it;
 ///         20% to the brain fund: pays for every agent's thinking (AI credits);
 ///         10% to the team.
 /// @notice Drops only ever go to agent vaults registered in the AgentFactory, where they count as earnings.

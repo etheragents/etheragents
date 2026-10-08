@@ -315,9 +315,9 @@ export function createServer(ctx: Ctx) {
       const ok = await verifyMessage({ address: a.owner as Hex, message: controlMessage(a.id, signedAction, nonce), signature: signature as Hex }).catch(() => false);
       if (!ok) throw new HttpError(401, "signature does not match the agent's owner");
     }
-    // below the $ETHERAGENTS hold the owner can't change its agents (they keep trading)
+    // below the $EA hold the owner can't change its agents (they keep trading)
     if (action === "persona" && market instanceof ChainMarket && !(await market.holdOk(a.owner).catch(() => true)))
-      throw new HttpError(403, "hold 100,000 $ETHERAGENTS per agent to change your agents");
+      throw new HttpError(403, "hold 100,000 $EA per agent to change your agents");
     a.controlNonce = nonce;
     if (action === "sleep") a.asleep = true;
     if (action === "wake") {

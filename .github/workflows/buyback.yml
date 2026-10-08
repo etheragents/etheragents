@@ -1,6 +1,6 @@
-# Buys back and burns $ETHERAGENTS with the ETH waiting in BuybackBurn (Uniswap V2-style router).
+# Buys back and burns $EA with the ETH waiting in BuybackBurn (Uniswap V2-style router).
 # Needs the secret KEEPER_PRIVATE_KEY (the operator key works: it is a keeper) and RPC_URL_MAINNET.
-# Runs daily once $ETHERAGENTS is live (scripts/token-live.mjs sets the token); before that it just exits.
+# Runs daily once $EA is live (scripts/token-live.mjs sets the token); before that it just exits.
 name: buyback
 on:
   workflow_dispatch:
